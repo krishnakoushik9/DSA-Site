@@ -31,6 +31,8 @@ interface RedditPost {
     selftext: string;
     post_hint?: string;
     subreddit: string;
+    is_interviewcafe?: boolean; // flag for custom source
+    company?: string; // used by interviewcafe
     preview?: {
         images: { source: { url: string; width: number; height: number } }[];
     };
@@ -118,15 +120,47 @@ export default function KrackUpdatesPage() {
     const fetchAll = useCallback(async () => {
         setLoading(true);
         setErrors([]);
+
+        // Fetch Reddit
         const results = await Promise.allSettled(
             SUBREDDITS.map(s => fetchSubreddit(s.id, sort))
         );
+
+        // Fetch InterviewCafe API manually in parallel
+        let icJobsPromise = fetch('/api/scrape-interviewcafe')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.jobs)) {
+                    return data.jobs.map((j: any) => ({
+                        id: j.id,
+                        title: j.title,
+                        company: j.company,
+                        url: j.url,
+                        permalink: j.url.startsWith('http') ? j.url : `https://www.interviewcafe.io${j.url}`,
+                        subreddit: 'InterviewCafe',
+                        author: 'InterviewCafe', // fake author
+                        score: 0,
+                        created_utc: Math.floor(new Date(j.postedAt).getTime() / 1000) || Math.floor(Date.now() / 1000),
+                        num_comments: 0,
+                        is_video: false,
+                        is_interviewcafe: true,
+                        selftext: ''
+                    }));
+                }
+                return [];
+            })
+            .catch(() => []);
+
+        const [icJobs] = await Promise.all([icJobsPromise]);
+
         const errs: string[] = [];
-        const all: RedditPost[] = [];
+        const all: RedditPost[] = [...icJobs];
+
         results.forEach((r, i) => {
             if (r.status === 'fulfilled') all.push(...r.value);
             else errs.push(SUBREDDITS[i].label);
         });
+
         setPosts(shuffle(all));
         setErrors(errs);
         setLoading(false);
@@ -136,8 +170,13 @@ export default function KrackUpdatesPage() {
 
     const filtered = useMemo(() => {
         if (activeFilter === 'all') return posts;
-        const ids = SUBREDDITS.filter(s => s.type === activeFilter).map(s => s.id);
-        return posts.filter(p => ids.includes(p.subreddit));
+
+        // We explicitly inject InterviewCafe items into the "job" filter too
+        const subIds = SUBREDDITS.filter(s => s.type === activeFilter).map(s => s.id);
+        return posts.filter(p => {
+            if (activeFilter === 'job' && p.is_interviewcafe) return true;
+            return subIds.includes(p.subreddit);
+        });
     }, [posts, activeFilter]);
 
     const subMeta = useMemo(() => {
@@ -245,17 +284,28 @@ export default function KrackUpdatesPage() {
                         return (
                             <div
                                 key={`${post.subreddit}-${post.id}`}
-                                className="break-inside-avoid mb-4 group card-nord overflow-hidden cursor-pointer hover:border-nord8/40 transition-all duration-300 hover:shadow-lg hover:shadow-nord8/5 relative"
+                                className={`break-inside-avoid mb-4 group card-nord overflow-hidden cursor-pointer transition-all duration-300 relative ${post.is_interviewcafe
+                                        ? 'border-nord14/30 hover:shadow-[0_0_20px_rgba(163,190,140,0.15)] bg-gradient-to-br from-nord14/5 to-transparent'
+                                        : 'hover:border-nord8/40 hover:shadow-lg hover:shadow-nord8/5'
+                                    }`}
                                 onClick={() => setExpandedId(isExpanded ? null : post.id)}
                             >
                                 {/* Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-nord8/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl" />
+                                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl ${post.is_interviewcafe ? 'bg-gradient-to-br from-nord14/10 to-transparent' : 'bg-gradient-to-br from-nord8/5 to-transparent'
+                                    }`} />
 
                                 {/* Source badge */}
-                                <div className={`absolute top-2 right-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold ${colors.bg} ${colors.text} ${colors.border}`}>
-                                    <TypeIcon size={9} />
-                                    r/{meta.label}
-                                </div>
+                                {post.is_interviewcafe ? (
+                                    <div className={`absolute top-2 right-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold bg-nord14/20 text-nord14 border-nord14/40 backdrop-blur-sm`}>
+                                        <Briefcase size={9} />
+                                        InterviewCafe
+                                    </div>
+                                ) : (
+                                    <div className={`absolute top-2 right-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold ${colors.bg} ${colors.text} ${colors.border}`}>
+                                        <TypeIcon size={9} />
+                                        r/{meta.label}
+                                    </div>
+                                )}
 
                                 {/* Image */}
                                 {img && (
@@ -294,19 +344,28 @@ export default function KrackUpdatesPage() {
 
                                     <div className="flex items-center justify-between text-[11px] text-nord4/40">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="flex items-center gap-1">
-                                                <ArrowUp size={11} className="text-nord12" />
-                                                <span className="font-semibold text-nord12">{formatScore(post.score)}</span>
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <MessageSquare size={11} />
-                                                {post.num_comments}
-                                            </span>
+                                            {post.is_interviewcafe ? (
+                                                <span className="flex items-center gap-1 font-semibold text-nord14">
+                                                    <Briefcase size={11} className="text-nord14" />
+                                                    Job Posting
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <span className="flex items-center gap-1">
+                                                        <ArrowUp size={11} className="text-nord12" />
+                                                        <span className="font-semibold text-nord12">{formatScore(post.score)}</span>
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <MessageSquare size={11} />
+                                                        {post.num_comments}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="flex items-center gap-1">
-                                                <User size={10} />
-                                                u/{post.author}
+                                                {post.is_interviewcafe ? <Briefcase size={10} /> : <User size={10} />}
+                                                {post.is_interviewcafe && post.company ? post.company : `u/${post.author}`}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <Clock size={10} />
@@ -317,13 +376,14 @@ export default function KrackUpdatesPage() {
 
                                     {isExpanded && (
                                         <a
-                                            href={`https://reddit.com${post.permalink}`}
+                                            href={post.is_interviewcafe ? post.permalink : `https://reddit.com${post.permalink}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={(e) => e.stopPropagation()}
-                                            className="mt-3 flex items-center gap-1.5 w-full justify-center py-1.5 rounded-lg border border-nord8/30 text-nord8 text-xs font-medium hover:bg-nord8/10 transition-colors"
+                                            className={`mt-3 flex items-center gap-1.5 w-full justify-center py-1.5 rounded-lg border text-xs font-medium transition-colors ${post.is_interviewcafe ? 'border-nord14/30 text-nord14 hover:bg-nord14/10' : 'border-nord8/30 text-nord8 hover:bg-nord8/10'
+                                                }`}
                                         >
-                                            View on Reddit <ExternalLink size={12} />
+                                            {post.is_interviewcafe ? 'Apply Source' : 'View on Reddit'} <ExternalLink size={12} />
                                         </a>
                                     )}
                                 </div>
