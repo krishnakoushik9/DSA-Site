@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Flame,
   Trophy,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react';
 import ProgressRing from '@/components/ProgressRing';
 import { useAppStore } from '@/store/useAppStore';
-import { getAllQuestions, getTopicProgress, getTopicForDate, isExamDay, formatDateDisplay, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
+import { getAllQuestions, getTopicProgress, getTopicForDate, isExamDay, formatDateDisplay, DSA_TOPICS_ORDERED, getDailyQuestions } from '@/lib/scheduler';
 import { TOPIC_COLORS } from '@/lib/types';
 
 // Color mapping for progress rings
@@ -55,6 +56,9 @@ export default function DashboardPage() {
   const todayIsExam = isExamDay(new Date());
   const examsTaken = examSessions.filter(e => e.completed).length;
   const totalExamScore = examSessions.filter(e => e.completed).reduce((sum, e) => sum + e.score, 0);
+
+  const dailyQuestions = getDailyQuestions(new Date(), []);
+  const isDailyComplete = dailyQuestions.length > 0 && dailyQuestions.every(q => completedQuestions.includes(q.id));
 
   return (
     <div className="space-y-4 stagger-children">
@@ -208,6 +212,17 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
+
+      {/* Logic Building Floating Pill */}
+      {isDailyComplete && (
+        <Link
+          href="/logic-building"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-nord8 to-nord9 text-nord0 px-5 py-3 rounded-full shadow-[0_0_20px_rgba(136,192,208,0.4)] hover:shadow-[0_0_25px_rgba(136,192,208,0.6)] hover:scale-105 transition-all duration-300 animate-bounce font-bold text-sm"
+        >
+          <Zap size={18} className="text-nord0" />
+          Logic Building 101
+        </Link>
+      )}
     </div>
   );
 }

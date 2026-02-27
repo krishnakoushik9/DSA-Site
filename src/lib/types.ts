@@ -56,6 +56,7 @@ export interface UserProgress {
     examSessions: ExamSession[];
     questionNotes: Record<string, QuestionNote>; // questionId -> QuestionNote
     topicNotes: Record<string, TopicNote>; // topic -> TopicNote
+    logicBuildingCodes?: Record<string, string>; // problemId -> code
     rating: number;
     streak: number;
     lastActiveDate: string;

@@ -53,6 +53,7 @@ interface AppState extends UserProgress {
     addCustomQuestion: (question: { problem: string; url: string; topic: string; difficulty: string }) => void;
     updateProfile: (profile: Partial<UserProfile>) => void;
     resetProgress: () => void;
+    saveLogicBuildingCode: (problemId: string, code: string) => void;
 
     // Sync
     syncToFirestore: () => Promise<void>;
@@ -71,6 +72,7 @@ const initialProgress: UserProgress = {
     lastActiveDate: '',
     excalidrawData: {},
     profile: { ...defaultProfile },
+    logicBuildingCodes: {},
 };
 
 let syncTimeout: NodeJS.Timeout | undefined;
@@ -138,6 +140,7 @@ export const useAppStore = create<AppState>()(
                                 syncStatus: 'synced',
                                 lastSyncedAt: new Date().toISOString(),
                                 _cloudReady: true,
+                                logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
                             });
                         } else {
                             set({ ...initialProgress, username, passcodeHash: hash, isLoggedIn: true, _cloudReady: true, syncStatus: 'idle' });
@@ -176,6 +179,7 @@ export const useAppStore = create<AppState>()(
                             isLoggedIn: true,
                             _cloudReady: true,
                             syncStatus: 'synced',
+                            logicBuildingCodes: cloudData.logicBuildingCodes || {},
                         });
                         isRepair = true;
                     } else {
@@ -293,6 +297,7 @@ export const useAppStore = create<AppState>()(
                         syncStatus: 'synced',
                         lastSyncedAt: new Date().toISOString(),
                         _cloudReady: true,
+                        logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
                     });
                 } else {
                     set({ syncStatus: 'idle', _cloudReady: true });
@@ -415,6 +420,16 @@ export const useAppStore = create<AppState>()(
                 set({ ...initialProgress, _cloudReady: true });
                 scheduleFirestoreSync(get);
             },
+
+            saveLogicBuildingCode: (problemId: string, code: string) => {
+                set((state) => ({
+                    logicBuildingCodes: {
+                        ...(state.logicBuildingCodes || {}),
+                        [problemId]: code,
+                    },
+                }));
+                scheduleFirestoreSync(get);
+            },
         }),
         {
             name: 'dsa-tracker-storage',
@@ -441,6 +456,7 @@ function buildSyncData(state: AppState): Record<string, unknown> {
         streak: state.streak,
         lastActiveDate: state.lastActiveDate,
         profile: state.profile,
+        logicBuildingCodes: state.logicBuildingCodes || {},
         // excalidrawData stays local
     };
 }
