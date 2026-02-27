@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { getDailyQuestions } from '@/lib/scheduler';
-import { Folder, FileCode, Search, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Folder, FileCode, Search, ArrowLeft } from 'lucide-react';
 import LogicBuildingIDE from '@/components/LogicBuildingIDE';
 import Link from 'next/link';
 
@@ -16,9 +15,8 @@ interface GithubNode {
 }
 
 export default function LogicBuildingPage() {
-    const { completedQuestions, saveLogicBuildingCode, logicBuildingCodes } = useAppStore();
+    const { logicBuildingCodes, saveLogicBuildingCode } = useAppStore();
     const [mounted, setMounted] = useState(false);
-    const [accessGranted, setAccessGranted] = useState(false);
 
     const [files, setFiles] = useState<GithubNode[]>([]);
     const [loading, setLoading] = useState(false);
@@ -29,14 +27,8 @@ export default function LogicBuildingPage() {
 
     useEffect(() => {
         setMounted(true);
-        const dailyQs = getDailyQuestions(new Date(), []);
-        const isComplete = dailyQs.length > 0 && dailyQs.every(q => completedQuestions.includes(q.id));
-        setAccessGranted(isComplete);
-
-        if (isComplete) {
-            fetchRepoContents();
-        }
-    }, [completedQuestions]);
+        fetchRepoContents();
+    }, []);
 
     const fetchRepoContents = async () => {
         setLoading(true);
@@ -70,23 +62,6 @@ export default function LogicBuildingPage() {
     };
 
     if (!mounted) return null;
-
-    if (!accessGranted) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center p-6 text-center animate-fade-in-up">
-                <div className="w-16 h-16 rounded-full bg-nord11/20 flex items-center justify-center mb-6">
-                    <AlertCircle size={32} className="text-nord11" />
-                </div>
-                <h1 className="text-3xl font-bold text-nord6 mb-4">Access Denied</h1>
-                <p className="text-nord4/70 max-w-md mb-8">
-                    You must complete your daily DSA goals before unlocking the Logic Building 101 arena. Discipline is key!
-                </p>
-                <Link href="/dashboard" className="px-6 py-3 bg-nord8 hover:bg-nord9 text-nord0 font-bold rounded-xl transition-all shadow-lg hover:shadow-nord8/30">
-                    Return to Dashboard
-                </Link>
-            </div>
-        );
-    }
 
     const filteredFiles = files.filter(f => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
 
