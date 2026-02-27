@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { Folder, FileCode, Search, ArrowLeft } from 'lucide-react';
 import LogicBuildingIDE from '@/components/LogicBuildingIDE';
 import Link from 'next/link';
+import MDEditor from '@uiw/react-md-editor';
 
 interface GithubNode {
     path: string;
@@ -159,9 +160,9 @@ export default function LogicBuildingPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <pre className="text-sm text-nord4 font-mono whitespace-pre-wrap">
-                                        {fileContent}
-                                    </pre>
+                                    <div data-color-mode="dark" className="p-2 border border-nord3/30 rounded-lg bg-nord0">
+                                        <MDEditor.Markdown source={fileContent} style={{ backgroundColor: 'transparent' }} />
+                                    </div>
                                 )}
                             </div>
                             <div className="flex-1 min-h-0">

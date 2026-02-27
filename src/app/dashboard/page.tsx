@@ -60,11 +60,21 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 stagger-children">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative">
         <div>
           <h1 className="text-2xl font-bold text-nord6 tracking-tight">Dashboard</h1>
           <p className="text-nord4/60 text-xs">{formatDateDisplay(new Date())}</p>
         </div>
+
+        {/* Logic Building Floating Pill - Top Center */}
+        <Link
+          href="/logic-building"
+          className="absolute left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 bg-nord8/20 text-nord8 hover:bg-nord8/30 px-3 py-1.5 border border-nord8/30 rounded-full shadow-lg hover:shadow-nord8/20 transition-all duration-300 font-medium text-xs backdrop-blur-sm"
+        >
+          <Zap size={14} className="text-nord8" />
+          Logic Building 101
+        </Link>
+
         {todayIsExam && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-nord15/15 border border-nord15/30 animate-pulse-glow">
             <Zap size={14} className="text-nord15" />
@@ -209,15 +219,6 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
-
-      {/* Logic Building Floating Pill */}
-      <Link
-        href="/logic-building"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-nord8 to-nord9 text-nord0 px-5 py-3 rounded-full shadow-[0_0_20px_rgba(136,192,208,0.4)] hover:shadow-[0_0_25px_rgba(136,192,208,0.6)] hover:scale-105 transition-all duration-300 animate-bounce font-bold text-sm"
-      >
-        <Zap size={18} className="text-nord0" />
-        Logic Building 101
-      </Link>
     </div>
   );
 }
