@@ -1,0 +1,446 @@
+// ============================================================
+// Zustand Store — localStorage cache + Firestore source of truth
+// ============================================================
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { UserProgress, UserProfile, ExamSession } from '@/lib/types';
+import { formatDate } from '@/lib/scheduler';
+import { saveToFirestore, loadFromFirestore, getUserPasscodeHash, hashPasscode } from '@/lib/firebase';
+
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+const defaultProfile: UserProfile = {
+    displayName: '',
+    bio: '',
+    leetcode: '',
+    gfg: '',
+    linkedin: '',
+    github: '',
+    college: '',
+    targetExam: 'SRCS',
+};
+
+interface AppState extends UserProgress {
+    // Auth
+    username: string;
+    passcodeHash: string;
+    isLoggedIn: boolean;
+
+    // UI
+    isSidebarCollapsed: boolean;
+    setSidebarCollapsed: (collapsed: boolean) => void;
+    isPremiumPopupOpen: boolean;
+    setPremiumPopupOpen: (open: boolean) => void;
+
+    // Sync
+    syncStatus: SyncStatus;
+    lastSyncedAt: string;
+    _cloudReady: boolean; // prevents sync until cloud data is loaded
+
+    // Auth actions
+    login: (username: string, passcode: string) => Promise<{ success: boolean; error?: string; isNew?: boolean }>;
+    logout: () => void;
+
+    // Data actions
+    toggleQuestionComplete: (questionId: string) => void;
+    markDailyTaskComplete: (dateKey: string) => void;
+    saveQuestionNote: (questionId: string, content: string) => void;
+    saveTopicNote: (topic: string, content: string) => void;
+    addExamSession: (session: ExamSession) => void;
+    completeExamSession: (examId: string, score: number) => void;
+    updateStreak: () => void;
+    saveExcalidrawData: (boardId: string, data: string) => void;
+    addCustomQuestion: (question: { problem: string; url: string; topic: string; difficulty: string }) => void;
+    updateProfile: (profile: Partial<UserProfile>) => void;
+    resetProgress: () => void;
+
+    // Sync
+    syncToFirestore: () => Promise<void>;
+    loadFromCloud: () => Promise<void>;
+}
+
+const initialProgress: UserProgress = {
+    completedQuestions: [],
+    dailyTasks: {},
+    examSessions: [],
+    questionNotes: {},
+    topicNotes: {},
+    customQuestions: [],
+    rating: 0,
+    streak: 0,
+    lastActiveDate: '',
+    excalidrawData: {},
+    profile: { ...defaultProfile },
+};
+
+let syncTimeout: NodeJS.Timeout | undefined;
+
+function scheduleFirestoreSync(getState: () => AppState) {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        const state = getState();
+        // GUARD: never sync if cloud data hasn't been loaded yet
+        if (!state._cloudReady || !state.isLoggedIn) return;
+        state.syncToFirestore();
+    }, 3000);
+}
+
+export const useAppStore = create<AppState>()(
+    persist(
+        (set, get) => ({
+            ...initialProgress,
+            username: '',
+            passcodeHash: '',
+            isLoggedIn: false,
+            isSidebarCollapsed: false,
+            isPremiumPopupOpen: false,
+            syncStatus: 'idle' as SyncStatus,
+            lastSyncedAt: '',
+            _cloudReady: false,
+
+            // =============== AUTH ===============
+            login: async (rawUsername: string, passcode: string) => {
+                const username = rawUsername.toLowerCase().trim();
+                const hash = hashPasscode(passcode);
+
+                // Check if user exists in Firestore
+                const existingHash = await getUserPasscodeHash(username);
+
+                if (existingHash) {
+                    // ── Existing user: verify passcode ──
+                    if (existingHash !== hash) {
+                        return { success: false, error: 'Wrong passcode. Try again.' };
+                    }
+
+                    // Passcode correct → load ALL data from cloud (cloud = truth)
+                    set({ username, passcodeHash: hash, isLoggedIn: true, syncStatus: 'syncing', _cloudReady: false });
+
+                    try {
+                        const result = await loadFromFirestore(username);
+                        if (result?.data) {
+                            const cloudData = result.data as Record<string, unknown>;
+
+                            set({
+                                completedQuestions: (cloudData.completedQuestions as string[]) || [],
+                                dailyTasks: (cloudData.dailyTasks as UserProgress['dailyTasks']) || {},
+                                examSessions: (cloudData.examSessions as ExamSession[]) || [],
+                                questionNotes: (cloudData.questionNotes as UserProgress['questionNotes']) || {},
+                                topicNotes: (cloudData.topicNotes as UserProgress['topicNotes']) || {},
+                                customQuestions: (cloudData.customQuestions as UserProgress['customQuestions']) || [],
+                                rating: (cloudData.rating as number) || 0,
+                                streak: (cloudData.streak as number) || 0,
+                                lastActiveDate: (cloudData.lastActiveDate as string) || '',
+                                profile: {
+                                    ...defaultProfile,
+                                    ...(cloudData.profile as Partial<UserProfile>),
+                                },
+                                excalidrawData: get().excalidrawData || {},
+                                syncStatus: 'synced',
+                                lastSyncedAt: new Date().toISOString(),
+                                _cloudReady: true,
+                            });
+                        } else {
+                            set({ ...initialProgress, username, passcodeHash: hash, isLoggedIn: true, _cloudReady: true, syncStatus: 'idle' });
+                        }
+                    } catch {
+                        set({ syncStatus: 'error', _cloudReady: true });
+                    }
+
+                    return { success: true, isNew: false };
+                } else {
+                    // ── NEW USER SAFETY CHECK ──
+                    // Ensure the document doesn't actually exist despite getUserPasscodeHash saying null
+                    const safetyCheck = await loadFromFirestore(username);
+                    let isRepair = false;
+
+                    if (safetyCheck?.data) {
+                        // RECOVERY LOGIC: If account exists but has no passcode, let them "claim" it.
+                        // This happens if a sync previously wiped the passcodeHash field due to a bug.
+                        console.warn("Auth desync detected for user:", username, ". Repairing...");
+                        const cloudData = safetyCheck.data as Record<string, any>;
+
+                        set({
+                            ...initialProgress,
+                            completedQuestions: cloudData.completedQuestions || [],
+                            dailyTasks: cloudData.dailyTasks || {},
+                            examSessions: cloudData.examSessions || [],
+                            questionNotes: cloudData.questionNotes || {},
+                            topicNotes: cloudData.topicNotes || {},
+                            customQuestions: cloudData.customQuestions || [],
+                            rating: cloudData.rating || 0,
+                            streak: cloudData.streak || 0,
+                            lastActiveDate: cloudData.lastActiveDate || '',
+                            profile: { ...defaultProfile, ...cloudData.profile },
+                            username,
+                            passcodeHash: hash,
+                            isLoggedIn: true,
+                            _cloudReady: true,
+                            syncStatus: 'synced',
+                        });
+                        isRepair = true;
+                    } else {
+                        set({
+                            ...initialProgress,
+                            username,
+                            passcodeHash: hash,
+                            isLoggedIn: true,
+                            _cloudReady: true,
+                        });
+                    }
+
+                    // Push initial data + passcode to Firestore (this repairs the missing hash)
+                    const dataToSync = buildSyncData(get());
+                    await saveToFirestore(username, dataToSync, hash);
+                    set({ syncStatus: 'synced', lastSyncedAt: new Date().toISOString() });
+
+                    return { success: true, isNew: !isRepair };
+                }
+            },
+
+            logout: () => {
+                set({
+                    ...initialProgress,
+                    username: '',
+                    passcodeHash: '',
+                    isLoggedIn: false,
+                    isSidebarCollapsed: false,
+                    syncStatus: 'idle',
+                    _cloudReady: false,
+                });
+            },
+
+            // =============== UI ACTIONS ===============
+            setSidebarCollapsed: (collapsed: boolean) => {
+                set({ isSidebarCollapsed: collapsed });
+            },
+            setPremiumPopupOpen: (open: boolean) => {
+                set({ isPremiumPopupOpen: open });
+            },
+
+            // =============== SYNC ===============
+            syncToFirestore: async () => {
+                const state = get();
+                // GUARD 1: Only sync if logged in and cloud is ready
+                if (!state.isLoggedIn || !state.username || !state._cloudReady) return;
+
+                // GUARD 2: Progress Lockdown
+                // If local state has less progress than cloud, it means a corruption or fresh origin reset.
+                // WE MUST NOT SYNC AND OVERWRITE.
+                try {
+                    const cloudMeta = await loadFromFirestore(state.username);
+                    if (cloudMeta?.data) {
+                        const cloudCount = (cloudMeta.data.completedQuestions as string[])?.length || 0;
+                        const localCount = state.completedQuestions.length;
+
+                        // If cloud is richer than local, abort sync and fix local
+                        if (cloudCount > localCount) {
+                            console.error("Critical: Cloud has more data than local. Aborting sync to prevent loss.");
+                            state.loadFromCloud(); // Force recovery
+                            return;
+                        }
+
+                        // If local is total zero but cloud has rating, also abort
+                        if (localCount === 0 && (cloudMeta.data.rating as number) > 0) {
+                            console.error("Critical: Local state is empty but cloud has rating. Aborting sync.");
+                            state.loadFromCloud();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Pre-sync check failed, skipping sync for safety.", e);
+                    return;
+                }
+
+                set({ syncStatus: 'syncing' });
+
+                const dataToSync = buildSyncData(state);
+                const success = await saveToFirestore(state.username, dataToSync, state.passcodeHash);
+
+                if (success) {
+                    set({ syncStatus: 'synced', lastSyncedAt: new Date().toISOString() });
+                    setTimeout(() => {
+                        if (get().syncStatus === 'synced') set({ syncStatus: 'idle' });
+                    }, 2000);
+                } else {
+                    set({ syncStatus: 'error' });
+                    setTimeout(() => {
+                        if (get().syncStatus === 'error') set({ syncStatus: 'idle' });
+                    }, 3000);
+                }
+            },
+
+            loadFromCloud: async () => {
+                const state = get();
+                if (!state.username) return;
+
+                set({ syncStatus: 'syncing', _cloudReady: false });
+                const result = await loadFromFirestore(state.username);
+                if (result?.data) {
+                    const cloudData = result.data as Record<string, unknown>;
+                    const localExcalidraw = get().excalidrawData || {};
+                    set({
+                        completedQuestions: (cloudData.completedQuestions as string[]) || [],
+                        dailyTasks: (cloudData.dailyTasks as UserProgress['dailyTasks']) || {},
+                        examSessions: (cloudData.examSessions as ExamSession[]) || [],
+                        questionNotes: (cloudData.questionNotes as UserProgress['questionNotes']) || {},
+                        topicNotes: (cloudData.topicNotes as UserProgress['topicNotes']) || {},
+                        customQuestions: (cloudData.customQuestions as UserProgress['customQuestions']) || [],
+                        rating: (cloudData.rating as number) || 0,
+                        streak: (cloudData.streak as number) || 0,
+                        lastActiveDate: (cloudData.lastActiveDate as string) || '',
+                        profile: { ...defaultProfile, ...(cloudData.profile as Partial<UserProfile>) },
+                        excalidrawData: localExcalidraw,
+                        syncStatus: 'synced',
+                        lastSyncedAt: new Date().toISOString(),
+                        _cloudReady: true,
+                    });
+                } else {
+                    set({ syncStatus: 'idle', _cloudReady: true });
+                }
+            },
+
+            // =============== DATA ACTIONS ===============
+            toggleQuestionComplete: (questionId: string) => {
+                set((state) => {
+                    const isCompleted = state.completedQuestions.includes(questionId);
+                    const newCompleted = isCompleted
+                        ? state.completedQuestions.filter(id => id !== questionId)
+                        : [...state.completedQuestions, questionId];
+
+                    const baseRating = newCompleted.length * 2;
+                    const examBonus = state.examSessions
+                        .filter(e => e.completed)
+                        .reduce((sum, e) => sum + e.score * 10, 0);
+                    const streakBonus = Math.min(state.streak * 5, 200);
+
+                    return {
+                        completedQuestions: newCompleted,
+                        rating: baseRating + examBonus + streakBonus,
+                    };
+                });
+                scheduleFirestoreSync(get);
+            },
+
+            markDailyTaskComplete: (dateKey: string) => {
+                set((state) => ({
+                    dailyTasks: {
+                        ...state.dailyTasks,
+                        [dateKey]: { ...state.dailyTasks[dateKey], completed: true },
+                    },
+                }));
+                scheduleFirestoreSync(get);
+            },
+
+            saveQuestionNote: (questionId: string, content: string) => {
+                set((state) => ({
+                    questionNotes: {
+                        ...state.questionNotes,
+                        [questionId]: { questionId, content, updatedAt: new Date().toISOString() },
+                    },
+                }));
+                scheduleFirestoreSync(get);
+            },
+
+            saveTopicNote: (topic: string, content: string) => {
+                set((state) => ({
+                    topicNotes: {
+                        ...state.topicNotes,
+                        [topic]: { topic, content, updatedAt: new Date().toISOString() },
+                    },
+                }));
+                scheduleFirestoreSync(get);
+            },
+
+            addExamSession: (session: ExamSession) => {
+                set((state) => ({ examSessions: [...state.examSessions, session] }));
+                scheduleFirestoreSync(get);
+            },
+
+            completeExamSession: (examId: string, score: number) => {
+                set((state) => {
+                    const sessions = state.examSessions.map(s =>
+                        s.id === examId ? { ...s, completed: true, score } : s
+                    );
+                    const examBonus = sessions.filter(e => e.completed).reduce((sum, e) => sum + e.score * 10, 0);
+                    const baseRating = state.completedQuestions.length * 2;
+                    const streakBonus = Math.min(state.streak * 5, 200);
+                    return { examSessions: sessions, rating: baseRating + examBonus + streakBonus };
+                });
+                scheduleFirestoreSync(get);
+            },
+
+            updateStreak: () => {
+                const state = get();
+                // GUARD: don't update streak if cloud hasn't loaded yet
+                if (!state._cloudReady) return;
+
+                const today = formatDate(new Date());
+                const yesterday = formatDate(new Date(Date.now() - 86400000));
+                if (state.lastActiveDate === today) return;
+
+                const newStreak = state.lastActiveDate === yesterday ? state.streak + 1 : 1;
+                set({ streak: newStreak, lastActiveDate: today });
+                scheduleFirestoreSync(get);
+            },
+
+            saveExcalidrawData: (boardId: string, data: string) => {
+                set((state) => ({
+                    excalidrawData: { ...state.excalidrawData, [boardId]: data },
+                }));
+                // Excalidraw stays local-only
+            },
+
+            addCustomQuestion: (q) => {
+                set((state) => {
+                    const newQuestion = {
+                        ...q,
+                        id: `custom-${Date.now()}`,
+                        source: 'Custom',
+                    };
+                    return {
+                        customQuestions: [...(state.customQuestions || []), newQuestion],
+                    };
+                });
+                scheduleFirestoreSync(get);
+            },
+
+            updateProfile: (profileUpdate: Partial<UserProfile>) => {
+                set((state) => ({
+                    profile: { ...state.profile, ...profileUpdate },
+                }));
+                scheduleFirestoreSync(get);
+            },
+
+            resetProgress: () => {
+                set({ ...initialProgress, _cloudReady: true });
+                scheduleFirestoreSync(get);
+            },
+        }),
+        {
+            name: 'dsa-tracker-storage',
+            storage: createJSONStorage(() => localStorage),
+            // Don't persist internal flags
+            partialize: (state) => {
+                const { _cloudReady, syncStatus, isPremiumPopupOpen, ...rest } = state;
+                return rest;
+            },
+        }
+    )
+);
+
+// Helper: build the data object to sync to Firestore
+function buildSyncData(state: AppState): Record<string, unknown> {
+    return {
+        completedQuestions: state.completedQuestions,
+        dailyTasks: state.dailyTasks,
+        examSessions: state.examSessions,
+        questionNotes: state.questionNotes,
+        topicNotes: state.topicNotes,
+        customQuestions: state.customQuestions || [],
+        rating: state.rating,
+        streak: state.streak,
+        lastActiveDate: state.lastActiveDate,
+        profile: state.profile,
+        // excalidrawData stays local
+    };
+}

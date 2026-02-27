@@ -1,0 +1,3 @@
+module.exports=[15510,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(90937);a.n(d("[project]/FinalScrath/dsa-tracker/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},84785,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(90937);a.n(d("[project]/FinalScrath/dsa-tracker/node_modules/next/dist/client/components/builtin/global-error.js"))},55059,a=>{"use strict";a.i(15510);var b=a.i(84785);a.n(b)}];
+
+//# sourceMappingURL=59431_next_dist_client_components_builtin_global-error_e9328014.js.map
