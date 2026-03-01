@@ -164,7 +164,7 @@ function DevCard() {
                     >
                         <div className="relative shrink-0">
                             <Image
-                                src="https://static.wikia.nocookie.net/gtawiki/images/3/34/Claude-GTA3.png/revision/latest?cb=20230412193939"
+                                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRI6PCloXrrRBkiCNeOICzZ5imDUlBLIMX12g&s"
                                 alt="Ankith Yellanathi"
                                 width={48}
                                 height={48}
