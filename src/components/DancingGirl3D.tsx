@@ -2,6 +2,7 @@
 
 import React, { Suspense, useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAppStore } from '@/store/useAppStore';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -107,10 +108,24 @@ export default function DancingGirl3D({ mode = 'dashboard' }: DancingGirl3DProps
     return <LoginMovingWrapper>{canvas}</LoginMovingWrapper>;
   }
 
+  const { isSidebarCollapsed } = useAppStore();
+  const [leftOffset, setLeftOffset] = useState(88);
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      const sidebarW = w >= 768 && !isSidebarCollapsed ? 260 : 72;
+      setLeftOffset(sidebarW + 16);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [isSidebarCollapsed]);
+
   return (
     <div
       className="fixed z-30 pointer-events-none"
-      style={{ bottom: 0, left: 16, height: CANVAS_HEIGHT, width: CANVAS_WIDTH }}
+      style={{ bottom: 0, left: leftOffset, height: CANVAS_HEIGHT, width: CANVAS_WIDTH }}
     >
       {canvas}
     </div>
