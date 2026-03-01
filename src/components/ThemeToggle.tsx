@@ -20,7 +20,7 @@ export default function ThemeToggle() {
 
     // Load initial theme
     useEffect(() => {
-        const saved = localStorage.getItem('dsa-theme') || 'nord';
+        const saved = localStorage.getItem('dsa-theme') || 'slate-lime';
         setTheme(saved);
         document.documentElement.dataset.theme = saved;
     }, []);
