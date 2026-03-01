@@ -50,7 +50,7 @@ const SUBREDDITS: { id: string; label: string; type: 'meme' | 'job' | 'tech' }[]
     { id: 'ITjobsinindia', label: 'IT Jobs India', type: 'job' },
 ];
 
-const SORT_OPTIONS: { value: SortMode; label: string; icon: React.ElementType }[] = [
+const SORT_OPTIONS: { value: SortMode; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
     { value: 'hot', label: 'Hot', icon: Flame },
     { value: 'top', label: 'Top', icon: TrendingUp },
     { value: 'new', label: 'New', icon: Sparkles },

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const DancingGirl3DLazy = dynamic(() => import('@/components/DancingGirl3D'), { ssr: false });
 import {
   Flame,
   Trophy,
@@ -219,6 +222,7 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
+      <DancingGirl3DLazy mode="dashboard" />
     </div>
   );
 }

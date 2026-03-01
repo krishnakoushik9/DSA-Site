@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+
+const DancingGirl3DLazy = dynamic(() => import('@/components/DancingGirl3D'), { ssr: false });
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -564,6 +567,7 @@ export default function LoginPage() {
                     </p>
                 </div>
             </div>
+            <DancingGirl3DLazy mode="login" />
         </div>
     );
 }
