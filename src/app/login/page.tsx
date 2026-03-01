@@ -134,7 +134,7 @@ function DevCard() {
                                 width={48}
                                 height={48}
                                 className="rounded-full object-cover ring-2"
-                                style={{ ringColor: 'var(--th-nord8)' }}
+                                style={{ outline: '2px solid var(--th-nord8)', outlineOffset: '2px' }}
                                 unoptimized
                             />
                             <div
@@ -169,7 +169,7 @@ function DevCard() {
                                 width={48}
                                 height={48}
                                 className="rounded-full object-cover ring-2"
-                                style={{ ringColor: '#84cc16' }}
+                                style={{ outline: '2px solid #84cc16', outlineOffset: '2px' }}
                                 unoptimized
                             />
                             <div
