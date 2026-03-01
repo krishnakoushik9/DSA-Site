@@ -83,18 +83,20 @@ function DevCard() {
             {!aboutOpen && (
                 <button
                     onClick={() => setAboutOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-semibold border transition-all hover:scale-105 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
                     style={{
-                        background: 'color-mix(in srgb, var(--th-nord1) 80%, transparent)',
-                        borderColor: 'color-mix(in srgb, var(--th-nord3) 30%, transparent)',
-                        color: 'var(--th-nord4)',
+                        background: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+                        borderColor: '#a3e635',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 16px rgba(132,204,22,0.25)',
                     }}
                 >
-                    <Code2 size={10} style={{ color: 'var(--th-nord8)' }} />
-                    Built by a CMR student
-                    <Sparkles size={10} style={{ color: 'var(--th-nord8)' }} />
+                    <Code2 size={12} />
+                    About the Dev
+                    <Sparkles size={12} />
                 </button>
             )}
+
 
             {/* Expanded card */}
             {aboutOpen && (
