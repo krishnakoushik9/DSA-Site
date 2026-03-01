@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import PomodoroWidget from '@/components/PomodoroWidget';
 import AuthGuard from '@/components/AuthGuard';
 import PremiumPopup from '@/components/PremiumPopup';
+import LearnAIPopup from '@/components/LearnAIPopup';
 import { useEffect, useState } from 'react';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -97,6 +98,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <PomodoroWidget />
             </div>
             <PremiumPopup />
+            <LearnAIPopup />
         </AuthGuard>
     );
 }

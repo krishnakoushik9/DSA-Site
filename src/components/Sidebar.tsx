@@ -18,6 +18,7 @@ import {
     Gift,
     Laugh,
     Briefcase,
+    BrainCircuit,
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -31,6 +32,7 @@ const navItems = [
     { href: '/community', label: 'Community', icon: MessageSquare },
     { href: '/perks', label: 'Perks', icon: Gift },
     { href: '/memes', label: 'Krack Updates', icon: Laugh },
+    { href: '/learnings/learn-ai', label: 'Learnings', icon: BrainCircuit },
     { href: '/about', label: 'Profile', icon: User },
 ];
 

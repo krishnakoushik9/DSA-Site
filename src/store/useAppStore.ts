@@ -54,6 +54,7 @@ interface AppState extends UserProgress {
     updateProfile: (profile: Partial<UserProfile>) => void;
     resetProgress: () => void;
     saveLogicBuildingCode: (problemId: string, code: string) => void;
+    toggleDeepLearningProgress: (notebookId: string) => void;
 
     // Sync
     syncToFirestore: () => Promise<void>;
@@ -73,6 +74,7 @@ const initialProgress: UserProgress = {
     excalidrawData: {},
     profile: { ...defaultProfile },
     logicBuildingCodes: {},
+    deepLearningProgress: {},
 };
 
 let syncTimeout: NodeJS.Timeout | undefined;
@@ -99,6 +101,7 @@ export const useAppStore = create<AppState>()(
             syncStatus: 'idle' as SyncStatus,
             lastSyncedAt: '',
             _cloudReady: false,
+            deepLearningProgress: {}, // Initialize here as well
 
             // =============== AUTH ===============
             login: async (rawUsername: string, passcode: string) => {
@@ -141,6 +144,7 @@ export const useAppStore = create<AppState>()(
                                 lastSyncedAt: new Date().toISOString(),
                                 _cloudReady: true,
                                 logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
+                                deepLearningProgress: (cloudData.deepLearningProgress as Record<string, boolean>) || {},
                             });
                         } else {
                             set({ ...initialProgress, username, passcodeHash: hash, isLoggedIn: true, _cloudReady: true, syncStatus: 'idle' });
@@ -180,6 +184,7 @@ export const useAppStore = create<AppState>()(
                             _cloudReady: true,
                             syncStatus: 'synced',
                             logicBuildingCodes: cloudData.logicBuildingCodes || {},
+                            deepLearningProgress: cloudData.deepLearningProgress || {},
                         });
                         isRepair = true;
                     } else {
@@ -298,6 +303,7 @@ export const useAppStore = create<AppState>()(
                         lastSyncedAt: new Date().toISOString(),
                         _cloudReady: true,
                         logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
+                        deepLearningProgress: (cloudData.deepLearningProgress as Record<string, boolean>) || {},
                     });
                 } else {
                     set({ syncStatus: 'idle', _cloudReady: true });
@@ -428,6 +434,19 @@ export const useAppStore = create<AppState>()(
                         [problemId]: code,
                     },
                 }));
+                scheduleFirestoreSync(get);
+            },
+
+            toggleDeepLearningProgress: (notebookId: string) => {
+                set((state) => {
+                    const newProgress = { ...state.deepLearningProgress };
+                    if (newProgress[notebookId]) {
+                        delete newProgress[notebookId];
+                    } else {
+                        newProgress[notebookId] = true;
+                    }
+                    return { deepLearningProgress: newProgress };
+                });
                 scheduleFirestoreSync(get);
             },
         }),

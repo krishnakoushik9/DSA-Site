@@ -57,6 +57,7 @@ export interface UserProgress {
     questionNotes: Record<string, QuestionNote>; // questionId -> QuestionNote
     topicNotes: Record<string, TopicNote>; // topic -> TopicNote
     logicBuildingCodes?: Record<string, string>; // problemId -> code
+    deepLearningProgress?: Record<string, boolean>;
     rating: number;
     streak: number;
     lastActiveDate: string;
