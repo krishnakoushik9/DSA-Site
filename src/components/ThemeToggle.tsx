@@ -4,23 +4,25 @@ import { useState, useEffect, useRef } from 'react';
 import { Palette, Check } from 'lucide-react';
 
 const THEMES = [
-    { id: 'nord', label: 'Nord (Default)', colors: ['bg-[#2E3440]', 'bg-[#88C0D0]'] },
+    { id: 'slate-lime', label: 'Slate + Lime (Default)', colors: ['bg-[#0F172A]', 'bg-[#84CC16]'] },
+    { id: 'nord', label: 'Nord', colors: ['bg-[#2E3440]', 'bg-[#88C0D0]'] },
     { id: 'light', label: 'Soft Light', colors: ['bg-[#F8FAFC]', 'bg-[#2563EB]'] },
-    { id: 'slate-lime', label: 'Slate + Lime', colors: ['bg-[#0F172A]', 'bg-[#84CC16]'] },
     { id: 'amoled', label: 'Pure AMOLED', colors: ['bg-[#000000]', 'bg-[#6366F1]'] },
 ];
 
 export default function ThemeToggle() {
-    const [theme, setTheme] = useState('nord');
+    const [theme, setTheme] = useState('slate-lime');
     const [open, setOpen] = useState(false);
     const [installingTarget, setInstallingTarget] = useState<typeof THEMES[0] | null>(null);
     const [progress, setProgress] = useState(0);
     const [isBoom, setIsBoom] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
-    // Load initial theme
+    // Load initial theme — migrate old 'nord' default to 'slate-lime'
     useEffect(() => {
-        const saved = localStorage.getItem('dsa-theme') || 'slate-lime';
+        const raw = localStorage.getItem('dsa-theme');
+        const saved = (!raw || raw === 'nord') ? 'slate-lime' : raw;
+        if (!raw || raw === 'nord') localStorage.setItem('dsa-theme', 'slate-lime');
         setTheme(saved);
         document.documentElement.dataset.theme = saved;
     }, []);
