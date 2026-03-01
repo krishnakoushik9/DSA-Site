@@ -1,5 +1,4 @@
 'use client';
-
 import React, { Suspense, useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
@@ -53,8 +52,9 @@ function Scene() {
   );
 }
 
-const CANVAS_HEIGHT = 180;
-const CANVAS_WIDTH = 120;
+// Increased canvas dimensions to fit the full character
+const CANVAS_HEIGHT = 320;
+const CANVAS_WIDTH = 160;
 
 interface DancingGirl3DProps {
   mode?: 'dashboard' | 'login';
@@ -94,7 +94,9 @@ function LoginMovingWrapper({ children }: { children: React.ReactNode }) {
 export default function DancingGirl3D({ mode = 'dashboard' }: DancingGirl3DProps) {
   const canvas = (
     <Canvas
-      camera={{ position: [0, 0.2, 2.2], fov: 45 }}
+      // Pulled camera back (z: 2.2 → 3.2) and raised Y slightly so
+      // the full character fits without clipping at the top
+      camera={{ position: [0, 0.6, 3.2], fov: 45 }}
       flat
       shadows
       gl={{ alpha: true, antialias: true }}
