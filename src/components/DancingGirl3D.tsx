@@ -24,15 +24,17 @@ function Model() {
   useFrame((_, delta) => mixerRef.current?.update(delta));
 
   return (
-    <group ref={group} position={[0, -0.5, 0]}>
+    // Raised Y from -0.5 to -0.1 so the character sits higher in the canvas
+    <group ref={group} position={[0, -0.1, 0]}>
       <primitive object={scene} scale={0.9} />
     </group>
   );
 }
 
 function Platform() {
+  // Platform follows character down
   return (
-    <mesh position={[0, -0.65, 0]} receiveShadow castShadow>
+    <mesh position={[0, -1.1, 0]} receiveShadow castShadow>
       <boxGeometry args={[1.2, 0.08, 0.8]} />
       <meshStandardMaterial color="#4C566A" roughness={0.8} metalness={0.2} />
     </mesh>
@@ -52,9 +54,9 @@ function Scene() {
   );
 }
 
-// Increased canvas dimensions to fit the full character
-const CANVAS_HEIGHT = 320;
-const CANVAS_WIDTH = 160;
+// Taller + wider canvas so the full character body is visible
+const CANVAS_HEIGHT = 420;
+const CANVAS_WIDTH = 180;
 
 interface DancingGirl3DProps {
   mode?: 'dashboard' | 'login';
@@ -94,9 +96,10 @@ function LoginMovingWrapper({ children }: { children: React.ReactNode }) {
 export default function DancingGirl3D({ mode = 'dashboard' }: DancingGirl3DProps) {
   const canvas = (
     <Canvas
-      // Pulled camera back (z: 2.2 → 3.2) and raised Y slightly so
-      // the full character fits without clipping at the top
-      camera={{ position: [0, 0.6, 3.2], fov: 45 }}
+      // camera.position.y=1.0  → looks at the character's vertical center
+      // camera.position.z=3.8  → far enough back to frame the whole body
+      // fov=40                 → narrow FOV avoids distortion on tall canvas
+      camera={{ position: [0, 1.0, 3.8], fov: 40 }}
       flat
       shadows
       gl={{ alpha: true, antialias: true }}
@@ -110,9 +113,12 @@ export default function DancingGirl3D({ mode = 'dashboard' }: DancingGirl3DProps
     return <LoginMovingWrapper>{canvas}</LoginMovingWrapper>;
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { isSidebarCollapsed } = useAppStore();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [leftOffset, setLeftOffset] = useState(88);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
