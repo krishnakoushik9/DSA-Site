@@ -18,6 +18,10 @@ const defaultProfile: UserProfile = {
     github: '',
     college: '',
     targetExam: 'SRCS',
+    rollNumber: '',
+    collegeEmail: '',
+    yearOfStudy: '',
+    profileVerified: false,
 };
 
 interface AppState extends UserProgress {
@@ -476,6 +480,7 @@ function buildSyncData(state: AppState): Record<string, unknown> {
         lastActiveDate: state.lastActiveDate,
         profile: state.profile,
         logicBuildingCodes: state.logicBuildingCodes || {},
+        deepLearningProgress: state.deepLearningProgress || {},
         // excalidrawData stays local
     };
 }

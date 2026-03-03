@@ -41,7 +41,8 @@ const features = [
 
 const usernameRules = [
     'Use letters, numbers, underscores or hyphens',
-    'Min 2 characters, max 20 characters',
+    'Min 5 characters, max 20 characters',
+    'No random words — use a real, identifiable name',
     'Same username = same progress on any device',
 ];
 
@@ -231,7 +232,7 @@ export default function LoginPage() {
 
     const handleUsernameNext = () => {
         const trimmed = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-        if (!trimmed || trimmed.length < 2) { setError('Username must be at least 2 characters (letters, numbers, - or _)'); return; }
+        if (!trimmed || trimmed.length < 5) { setError('Username must be at least 5 characters (letters, numbers, - or _). No random words.'); return; }
         if (trimmed.length > 20) { setError('Username cannot exceed 20 characters'); return; }
         setUsername(trimmed);
         setError('');
@@ -410,7 +411,7 @@ export default function LoginPage() {
                                         autoFocus
                                         autoComplete="username"
                                     />
-                                    {username.trim().length >= 2 && (
+                                    {username.trim().length >= 5 && (
                                         <User size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 opacity-60" style={{ color: 'var(--th-nord14)' }} />
                                     )}
                                 </div>

@@ -47,6 +47,10 @@ export interface UserProfile {
     github: string;
     college: string;
     targetExam: string;
+    rollNumber: string;
+    collegeEmail: string;
+    yearOfStudy: '1st' | '2nd' | '3rd' | '';
+    profileVerified: boolean;
 }
 
 export interface UserProgress {

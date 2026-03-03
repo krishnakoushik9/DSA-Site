@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
+import ProfileVerificationModal from '@/components/ProfileVerificationModal';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
-    const { isLoggedIn } = useAppStore();
+    const { isLoggedIn, profile } = useAppStore();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -28,5 +29,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    return <>{children}</>;
+    // If user is logged in but profile is NOT verified, show forced verification modal
+    const needsVerification = isLoggedIn && !profile?.profileVerified;
+
+    return (
+        <>
+            {needsVerification && <ProfileVerificationModal />}
+            {children}
+        </>
+    );
 }
