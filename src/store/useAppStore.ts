@@ -59,6 +59,8 @@ interface AppState extends UserProgress {
     resetProgress: () => void;
     saveLogicBuildingCode: (problemId: string, code: string) => void;
     toggleDeepLearningProgress: (notebookId: string) => void;
+    // Credit economy
+    spendCredits: (amount: number, plan: 'placement' | 'monthly') => boolean;
 
     // Sync
     syncToFirestore: () => Promise<void>;
@@ -79,6 +81,10 @@ const initialProgress: UserProgress = {
     profile: { ...defaultProfile },
     logicBuildingCodes: {},
     deepLearningProgress: {},
+    credits: 0,
+    isPremium: false,
+    premiumPlan: null,
+    premiumExpiresAt: null,
 };
 
 let syncTimeout: NodeJS.Timeout | undefined;
@@ -149,6 +155,10 @@ export const useAppStore = create<AppState>()(
                                 _cloudReady: true,
                                 logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
                                 deepLearningProgress: (cloudData.deepLearningProgress as Record<string, boolean>) || {},
+                                credits: (cloudData.credits as number) ?? 300,
+                                isPremium: (cloudData.isPremium as boolean) || false,
+                                premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
+                                premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
                             });
                         } else {
                             set({ ...initialProgress, username, passcodeHash: hash, isLoggedIn: true, _cloudReady: true, syncStatus: 'idle' });
@@ -198,6 +208,7 @@ export const useAppStore = create<AppState>()(
                             passcodeHash: hash,
                             isLoggedIn: true,
                             _cloudReady: true,
+                            credits: 300, // 🎁 Welcome bonus for new users
                         });
                     }
 
@@ -308,6 +319,10 @@ export const useAppStore = create<AppState>()(
                         _cloudReady: true,
                         logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
                         deepLearningProgress: (cloudData.deepLearningProgress as Record<string, boolean>) || {},
+                        credits: (cloudData.credits as number) ?? 300,
+                        isPremium: (cloudData.isPremium as boolean) || false,
+                        premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
+                        premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
                     });
                 } else {
                     set({ syncStatus: 'idle', _cloudReady: true });
@@ -328,9 +343,14 @@ export const useAppStore = create<AppState>()(
                         .reduce((sum, e) => sum + e.score * 10, 0);
                     const streakBonus = Math.min(state.streak * 5, 200);
 
+                    // Credit economy: +5 per solve, -5 per un-solve (never below 0)
+                    const creditDelta = isCompleted ? -5 : 5;
+                    const newCredits = Math.max(0, (state.credits ?? 0) + creditDelta);
+
                     return {
                         completedQuestions: newCompleted,
                         rating: baseRating + examBonus + streakBonus,
+                        credits: newCredits,
                     };
                 });
                 scheduleFirestoreSync(get);
@@ -453,6 +473,23 @@ export const useAppStore = create<AppState>()(
                 });
                 scheduleFirestoreSync(get);
             },
+
+            // Spend credits to unlock premium
+            spendCredits: (amount: number, plan: 'placement' | 'monthly'): boolean => {
+                const state = get();
+                if ((state.credits ?? 0) < amount) return false;
+                const expiresAt = plan === 'monthly'
+                    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    : null; // placement = 6 months but treated as non-expiring for simplicity
+                set((s) => ({
+                    credits: (s.credits ?? 0) - amount,
+                    isPremium: true,
+                    premiumPlan: plan,
+                    premiumExpiresAt: expiresAt,
+                }));
+                scheduleFirestoreSync(get);
+                return true;
+            },
         }),
         {
             name: 'dsa-tracker-storage',
@@ -481,6 +518,10 @@ function buildSyncData(state: AppState): Record<string, unknown> {
         profile: state.profile,
         logicBuildingCodes: state.logicBuildingCodes || {},
         deepLearningProgress: state.deepLearningProgress || {},
+        credits: state.credits ?? 0,
+        isPremium: state.isPremium ?? false,
+        premiumPlan: state.premiumPlan ?? null,
+        premiumExpiresAt: state.premiumExpiresAt ?? null,
         // excalidrawData stays local
     };
 }

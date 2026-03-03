@@ -67,6 +67,11 @@ export interface UserProgress {
     lastActiveDate: string;
     excalidrawData: Record<string, string>; // boardId -> serialized data
     profile: UserProfile;
+    // ── Credit economy ──
+    credits: number;       // virtual currency (₹1 = 1 credit, starts at 300)
+    isPremium: boolean;    // unlocked via credits
+    premiumPlan?: 'placement' | 'monthly' | null; // which plan was purchased
+    premiumExpiresAt?: string | null; // ISO date or null for lifetime
 }
 
 export const DSA_TOPICS = [

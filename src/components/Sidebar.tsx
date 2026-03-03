@@ -19,6 +19,8 @@ import {
     Laugh,
     Briefcase,
     BrainCircuit,
+    Coins,
+    ShieldCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -40,7 +42,7 @@ export default function Sidebar() {
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
-    const { username, logout, isSidebarCollapsed, setSidebarCollapsed } = useAppStore();
+    const { username, logout, isSidebarCollapsed, setSidebarCollapsed, credits, isPremium, setPremiumPopupOpen } = useAppStore();
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -113,8 +115,35 @@ export default function Sidebar() {
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-nord0/40 mb-2">
                         <User size={14} className="text-nord8/50" />
                         <span className="text-xs text-nord4/50 font-medium truncate">@{username}</span>
+                        {isPremium && (
+                            <ShieldCheck size={12} className="text-amber-400 ml-auto shrink-0" />
+                        )}
                     </div>
                 )}
+
+                {/* Credit balance chip */}
+                {mounted && !isSidebarCollapsed ? (
+                    <button
+                        onClick={() => setPremiumPopupOpen(true)}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all mb-1 group"
+                    >
+                        <Coins size={14} className="text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-amber-300 truncate">{(credits ?? 0).toLocaleString()} credits</span>
+                        {isPremium ? (
+                            <span className="ml-auto text-[9px] font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded-full shrink-0">PRO</span>
+                        ) : (
+                            <span className="ml-auto text-[9px] text-amber-500/60 group-hover:text-amber-400 transition-colors shrink-0">store →</span>
+                        )}
+                    </button>
+                ) : mounted && isSidebarCollapsed ? (
+                    <button
+                        onClick={() => setPremiumPopupOpen(true)}
+                        title={`${(credits ?? 0)} credits`}
+                        className="w-full flex items-center justify-center py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all mb-1"
+                    >
+                        <Coins size={16} className="text-amber-400" />
+                    </button>
+                ) : null}
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-nord11/50 hover:text-nord11 hover:bg-nord11/10 transition-all duration-300"

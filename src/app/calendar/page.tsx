@@ -85,11 +85,31 @@ export default function CalendarPage() {
         const exam = isExamDay(date);
         const past = isPast(date) && !isToday(date);
         if (allDone) return 'complete';
+        if (past && someDone && !allDone) return 'missed-partial'; // some done but not all, past
         if (past && !someDone) return 'missed';
         if (exam) return 'exam';
         if (someDone) return 'partial';
         return 'pending';
     }, [completedQuestions]);
+
+    // Calculate lag: total uncompleted questions from all past non-complete days up to (not including) today
+    const lagCount = (() => {
+        const today = new Date();
+        let lag = 0;
+        // Go back from yesterday up to study start
+        const start = new Date(2026, 1, 25); // STUDY_START_DATE Feb 25 2026
+        const cursor = new Date(today);
+        cursor.setDate(cursor.getDate() - 1); // start from yesterday
+        while (cursor >= start) {
+            const qs = getDailyQuestions(cursor, completedQuestions);
+            if (qs.length > 0) {
+                const incomplete = qs.filter(q => !completedQuestions.includes(q.id)).length;
+                lag += incomplete;
+            }
+            cursor.setDate(cursor.getDate() - 1);
+        }
+        return lag;
+    })();
 
     if (!mounted) {
         return (
@@ -164,6 +184,7 @@ export default function CalendarPage() {
                             const sched = getScheduleForDate(date);
                             const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
                             const dayContests = contests.filter(c => isSameDay(new Date(c.startTime), date));
+                            const isMissed = isCurrentMonth && (status === 'missed' || status === 'missed-partial');
 
                             return (
                                 <button
@@ -173,12 +194,20 @@ export default function CalendarPage() {
                                         ${!isCurrentMonth ? 'opacity-25 bg-nord0/20' : 'hover:bg-nord2/30'}
                                         ${selected ? 'bg-nord8/10 ring-1 ring-inset ring-nord8/30' : ''}
                                         ${today ? 'bg-nord8/5' : ''}
+                                        ${isMissed ? 'missed-day-glow' : ''}
                                     `}
+                                    style={isMissed ? {
+                                        animation: 'missed-pulse 2.5s ease-in-out infinite',
+                                        background: status === 'missed-partial'
+                                            ? 'linear-gradient(135deg, rgba(235,142,9,0.07) 0%, rgba(191,97,106,0.09) 100%)'
+                                            : 'rgba(191,97,106,0.07)',
+                                    } : undefined}
                                 >
                                     {/* Date number */}
                                     <div className="flex items-center justify-between w-full">
                                         <span className={`text-sm font-semibold leading-none ${today ? 'text-nord8' :
-                                            !isCurrentMonth ? 'text-nord3' : 'text-nord4'
+                                            isMissed ? 'text-nord11/80' :
+                                                !isCurrentMonth ? 'text-nord3' : 'text-nord4'
                                             }`}>
                                             {date.getDate()}
                                         </span>
@@ -188,6 +217,23 @@ export default function CalendarPage() {
                                             </span>
                                         )}
                                     </div>
+
+                                    {/* Lag badge — only on today */}
+                                    {today && lagCount > 0 && (
+                                        <div
+                                            className="absolute bottom-1 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded"
+                                            style={{
+                                                background: 'rgba(191,97,106,0.18)',
+                                                border: '1px solid rgba(191,97,106,0.4)',
+                                                boxShadow: '0 0 6px rgba(191,97,106,0.3)',
+                                            }}
+                                            title={`${lagCount} questions behind schedule`}
+                                        >
+                                            <span className="text-[7px] font-bold" style={{ color: '#bf616a' }}>
+                                                -{lagCount}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Topic & Difficulty - visible on larger screens */}
                                     {isCurrentMonth && status !== 'inactive' && sched && (
@@ -222,7 +268,8 @@ export default function CalendarPage() {
                                     {status !== 'inactive' && (
                                         <div className="flex gap-0.5 mt-auto sm:mt-1">
                                             {status === 'complete' && <div className="w-1.5 h-1.5 rounded-full bg-nord14" />}
-                                            {status === 'missed' && <div className="w-1.5 h-1.5 rounded-full bg-nord11" />}
+                                            {status === 'missed' && <div className="w-1.5 h-1.5 rounded-full bg-nord11" title="Missed" />}
+                                            {status === 'missed-partial' && <div className="w-1.5 h-1.5 rounded-full bg-nord11" title="Partially missed" />}
                                             {status === 'partial' && <div className="w-1.5 h-1.5 rounded-full bg-nord13" />}
                                             {status === 'pending' && <div className="w-1.5 h-1.5 rounded-full bg-nord8/30" />}
                                             {exam && <div className="w-1.5 h-1.5 rounded-full bg-nord15 sm:hidden" />}
