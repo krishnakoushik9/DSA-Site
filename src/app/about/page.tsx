@@ -21,6 +21,7 @@ import {
 import { useAppStore } from '@/store/useAppStore';
 import { getAllQuestions, getTopicProgress, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
 import ProgressRing from '@/components/ProgressRing';
+import LeetCodeStats from '@/components/LeetCodeStats';
 
 export default function AboutPage() {
     const {
@@ -287,6 +288,11 @@ export default function AboutPage() {
                     <p className="text-[9px] text-nord4/25">Strongest topic: {strongestTopic}</p>
                 </div>
             </div>
+
+            {/* LeetCode Profile Tracking */}
+            {!editing && profile.leetcode && (
+                <LeetCodeStats username={profile.leetcode} />
+            )}
         </div>
     );
 }

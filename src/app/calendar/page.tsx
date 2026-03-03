@@ -26,6 +26,20 @@ import {
 } from '@/lib/scheduler';
 import { TOPIC_COLORS } from '@/lib/types';
 
+interface Contest {
+    id: string;
+    title: string;
+    platform: 'LeetCode' | 'Codeforces';
+    startTime: number;
+    duration: number;
+    url: string;
+}
+
+const PLATFORM_COLORS: Record<string, string> = {
+    LeetCode: 'bg-nord13/20 text-nord13 border-nord13/30',
+    Codeforces: 'bg-nord9/20 text-nord9 border-nord9/30',
+};
+
 const DIFF_COLORS: Record<string, { dot: string; text: string }> = {
     Easy: { dot: 'bg-nord14', text: 'text-nord14' },
     Medium: { dot: 'bg-nord13', text: 'text-nord13' },
@@ -37,10 +51,19 @@ export default function CalendarPage() {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [contests, setContests] = useState<Contest[]>([]);
 
     const { completedQuestions, toggleQuestionComplete } = useAppStore();
 
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        setMounted(true);
+        fetch('/api/contests')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setContests(data);
+            })
+            .catch(err => console.error('Failed to fetch contests:', err));
+    }, []);
 
     const days = getMonthDays(currentYear, currentMonth);
     const monthName = format(new Date(currentYear, currentMonth), 'MMMM yyyy');
@@ -140,6 +163,7 @@ export default function CalendarPage() {
                             const diff = getDifficultyForDate(date);
                             const sched = getScheduleForDate(date);
                             const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
+                            const dayContests = contests.filter(c => isSameDay(new Date(c.startTime), date));
 
                             return (
                                 <button
@@ -154,7 +178,7 @@ export default function CalendarPage() {
                                     {/* Date number */}
                                     <div className="flex items-center justify-between w-full">
                                         <span className={`text-sm font-semibold leading-none ${today ? 'text-nord8' :
-                                                !isCurrentMonth ? 'text-nord3' : 'text-nord4'
+                                            !isCurrentMonth ? 'text-nord3' : 'text-nord4'
                                             }`}>
                                             {date.getDate()}
                                         </span>
@@ -183,6 +207,17 @@ export default function CalendarPage() {
                                         </div>
                                     )}
 
+                                    {/* Contests - small pills */}
+                                    {isCurrentMonth && dayContests.length > 0 && (
+                                        <div className="flex flex-col gap-0.5 mt-1 overflow-hidden">
+                                            {dayContests.map(c => (
+                                                <div key={c.id} className={`text-[7px] px-1 rounded border leading-none py-0.5 truncate font-bold ${PLATFORM_COLORS[c.platform]}`}>
+                                                    {c.platform === 'LeetCode' ? 'LC' : 'CF'}: {c.title}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     {/* Status dots - always visible */}
                                     {status !== 'inactive' && (
                                         <div className="flex gap-0.5 mt-auto sm:mt-1">
@@ -205,6 +240,7 @@ export default function CalendarPage() {
                         date={selectedDate}
                         completedQuestions={completedQuestions}
                         toggleQuestionComplete={toggleQuestionComplete}
+                        contests={contests.filter(c => isSameDay(new Date(c.startTime), selectedDate!))}
                         onClose={() => setSelectedDate(null)}
                     />
                 )}
@@ -217,11 +253,13 @@ function DayDetailPanel({
     date,
     completedQuestions,
     toggleQuestionComplete,
+    contests,
     onClose,
 }: {
     date: Date;
     completedQuestions: string[];
     toggleQuestionComplete: (id: string) => void;
+    contests: Contest[];
     onClose: () => void;
 }) {
     const topic = getTopicForDate(date);
@@ -284,6 +322,32 @@ function DayDetailPanel({
                 )}
             </div>
 
+            {/* Contests List */}
+            {contests.length > 0 && (
+                <div className="px-4 py-3 border-b border-nord3/10 space-y-2">
+                    <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider">
+                        Upcoming Contests
+                    </p>
+                    {contests.map(c => (
+                        <a
+                            key={c.id}
+                            href={c.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center justify-between p-2 rounded-lg border transition-all hover:scale-[1.02] ${PLATFORM_COLORS[c.platform]}`}
+                        >
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold truncate leading-tight">{c.title}</p>
+                                <p className="text-[8px] opacity-70">
+                                    {format(new Date(c.startTime), 'h:mm a')} • {Math.round(c.duration / 3600000)}h
+                                </p>
+                            </div>
+                            <ExternalLink size={10} className="flex-shrink-0 ml-2" />
+                        </a>
+                    ))}
+                </div>
+            )}
+
             {/* Questions List */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
                 <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider mb-1">
@@ -298,8 +362,8 @@ function DayDetailPanel({
                             <div
                                 key={q.id}
                                 className={`flex items-start gap-2 p-2 rounded-lg transition-all duration-150 ${isDone
-                                        ? 'bg-nord14/5 border border-nord14/10'
-                                        : 'bg-nord2/15 border border-nord3/10 hover:border-nord3/25'
+                                    ? 'bg-nord14/5 border border-nord14/10'
+                                    : 'bg-nord2/15 border border-nord3/10 hover:border-nord3/25'
                                     }`}
                             >
                                 <button
