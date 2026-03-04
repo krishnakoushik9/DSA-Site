@@ -10,6 +10,7 @@ import {
     Zap,
     X,
     BookOpen,
+    Dumbbell,
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import {
@@ -25,6 +26,7 @@ import {
     format,
 } from '@/lib/scheduler';
 import { TOPIC_COLORS } from '@/lib/types';
+import { getWorkoutForDate } from '@/lib/workout';
 
 interface Contest {
     id: string;
@@ -313,6 +315,7 @@ function DayDetailPanel({
     const questions = getDailyQuestions(date, completedQuestions);
     const sched = getScheduleForDate(date);
     const exam = isExamDay(date);
+    const workout = getWorkoutForDate(date);
     const colors = TOPIC_COLORS[topic] || TOPIC_COLORS['Miscellaneous'];
     const diff = sched?.difficulty || '';
     const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
@@ -369,79 +372,107 @@ function DayDetailPanel({
                 )}
             </div>
 
-            {/* Contests List */}
-            {contests.length > 0 && (
-                <div className="px-4 py-3 border-b border-nord3/10 space-y-2">
-                    <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider">
-                        Upcoming Contests
-                    </p>
-                    {contests.map(c => (
-                        <a
-                            key={c.id}
-                            href={c.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center justify-between p-2 rounded-lg border transition-all hover:scale-[1.02] ${PLATFORM_COLORS[c.platform]}`}
-                        >
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold truncate leading-tight">{c.title}</p>
-                                <p className="text-[8px] opacity-70">
-                                    {format(new Date(c.startTime), 'h:mm a')} • {Math.round(c.duration / 3600000)}h
-                                </p>
-                            </div>
-                            <ExternalLink size={10} className="flex-shrink-0 ml-2" />
-                        </a>
-                    ))}
-                </div>
-            )}
-
-            {/* Questions List */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-                <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider mb-1">
-                    Questions
-                </p>
-                {questions.length === 0 ? (
-                    <p className="text-nord4/20 text-xs italic">No questions assigned.</p>
-                ) : (
-                    questions.map((q) => {
-                        const isDone = completedQuestions.includes(q.id);
-                        return (
-                            <div
-                                key={q.id}
-                                className={`flex items-start gap-2 p-2 rounded-lg transition-all duration-150 ${isDone
-                                    ? 'bg-nord14/5 border border-nord14/10'
-                                    : 'bg-nord2/15 border border-nord3/10 hover:border-nord3/25'
-                                    }`}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto w-full">
+                {/* Contests List */}
+                {contests.length > 0 && (
+                    <div className="px-4 py-3 border-b border-nord3/10 space-y-2">
+                        <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider">
+                            Upcoming Contests
+                        </p>
+                        {contests.map(c => (
+                            <a
+                                key={c.id}
+                                href={c.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center justify-between p-2 rounded-lg border transition-all hover:scale-[1.02] ${PLATFORM_COLORS[c.platform]}`}
                             >
-                                <button
-                                    onClick={() => toggleQuestionComplete(q.id)}
-                                    className="mt-px flex-shrink-0"
-                                >
-                                    {isDone ? (
-                                        <CheckCircle2 size={14} className="text-nord14" />
-                                    ) : (
-                                        <Circle size={14} className="text-nord3 hover:text-nord8 transition-colors" />
-                                    )}
-                                </button>
-                                <div className="flex-1 min-w-0">
-                                    <p className={`text-xs font-medium leading-tight ${isDone ? 'text-nord14/50 line-through' : 'text-nord5'
-                                        }`}>
-                                        {q.problem}
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-bold truncate leading-tight">{c.title}</p>
+                                    <p className="text-[8px] opacity-70">
+                                        {format(new Date(c.startTime), 'h:mm a')} • {Math.round(c.duration / 3600000)}h
                                     </p>
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                        <span className="text-[9px] text-nord4/25">{q.source}</span>
-                                        {q.url && (
-                                            <a href={q.url} target="_blank" rel="noopener noreferrer"
-                                                className="text-nord8/40 hover:text-nord8 transition-colors">
-                                                <ExternalLink size={9} />
-                                            </a>
+                                </div>
+                                <ExternalLink size={10} className="flex-shrink-0 ml-2" />
+                            </a>
+                        ))}
+                    </div>
+                )}
+
+                {/* Workout List */}
+                {workout && (
+                    <div className="px-4 py-3 border-b border-nord3/10 space-y-2">
+                        <p className="flex items-center text-nord4/30 text-[10px] font-semibold uppercase tracking-wider mb-1">
+                            <Dumbbell size={10} className="mr-1 inline" /> Gym Split ({workout.isRest ? 'Rest' : 'Workout'})
+                        </p>
+                        <div className="bg-nord2/20 border border-nord3/10 rounded-lg p-2.5 space-y-1.5">
+                            <div className="flex justify-between items-start mb-2">
+                                <span className="text-xs font-bold text-nord8">{workout.title}</span>
+                            </div>
+                            {workout.exercises.map((ex, i) => (
+                                <div key={i} className="flex justify-between text-[10px] border-t border-nord3/10 pt-1.5 mt-1.5 first:border-0 first:pt-0 first:mt-0">
+                                    <div className="flex flex-col">
+                                        <span className="text-nord4/90 font-medium">{ex.name}</span>
+                                        {ex.notes && <span className="text-[8px] text-nord4/40 mt-0.5">{ex.notes}</span>}
+                                    </div>
+                                    <span className="text-nord13 font-semibold text-right flex-shrink-0 ml-2 mt-px">
+                                        {ex.sets} × {ex.reps}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Questions List */}
+                <div className="px-4 py-3 space-y-1.5">
+                    <p className="text-nord4/30 text-[10px] font-semibold uppercase tracking-wider mb-1">
+                        Questions
+                    </p>
+                    {questions.length === 0 ? (
+                        <p className="text-nord4/20 text-xs italic">No questions assigned.</p>
+                    ) : (
+                        questions.map((q) => {
+                            const isDone = completedQuestions.includes(q.id);
+                            return (
+                                <div
+                                    key={q.id}
+                                    className={`flex items-start gap-2 p-2 rounded-lg transition-all duration-150 ${isDone
+                                        ? 'bg-nord14/5 border border-nord14/10'
+                                        : 'bg-nord2/15 border border-nord3/10 hover:border-nord3/25'
+                                        }`}
+                                >
+                                    <button
+                                        onClick={() => toggleQuestionComplete(q.id)}
+                                        className="mt-px flex-shrink-0"
+                                    >
+                                        {isDone ? (
+                                            <CheckCircle2 size={14} className="text-nord14" />
+                                        ) : (
+                                            <Circle size={14} className="text-nord3 hover:text-nord8 transition-colors" />
                                         )}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-xs font-medium leading-tight ${isDone ? 'text-nord14/50 line-through' : 'text-nord5'
+                                            }`}>
+                                            {q.problem}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-[9px] text-nord4/25">{q.source}</span>
+                                            {q.url && (
+                                                <a href={q.url} target="_blank" rel="noopener noreferrer"
+                                                    className="text-nord8/40 hover:text-nord8 transition-colors">
+                                                    <ExternalLink size={9} />
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })
-                )}
+                            );
+                        })
+                    )}
+                </div>
             </div>
         </div>
     );

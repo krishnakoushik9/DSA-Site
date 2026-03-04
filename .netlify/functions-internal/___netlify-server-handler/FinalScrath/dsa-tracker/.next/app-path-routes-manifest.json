@@ -1,0 +1,21 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/about/page": "/about",
+  "/api/compile/route": "/api/compile",
+  "/api/reddit-memes/route": "/api/reddit-memes",
+  "/api/scrape-perks/route": "/api/scrape-perks",
+  "/calendar/page": "/calendar",
+  "/community/page": "/community",
+  "/company/page": "/company",
+  "/dashboard/page": "/dashboard",
+  "/exams/page": "/exams",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/memes/page": "/memes",
+  "/page": "/",
+  "/perks/page": "/perks",
+  "/search/page": "/search",
+  "/startups/page": "/startups",
+  "/workspace/page": "/workspace"
+}

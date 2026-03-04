@@ -1,0 +1,3 @@
+module.exports=[69446,a=>{"use strict";var b=a.i(28865),c=a.i(87357),d=a.i(62961),e=a.i(87626);function f(){let[a,f]=(0,c.useState)(!1),{isLoggedIn:g}=(0,e.useAppStore)(),h=(0,d.useRouter)();return(0,c.useEffect)(()=>{f(!0)},[]),(0,c.useEffect)(()=>{a&&(g?h.replace("/dashboard"):h.replace("/login"))},[a,g,h]),(0,b.jsx)("div",{className:"min-h-screen bg-nord0 flex items-center justify-center",children:(0,b.jsx)("div",{className:"w-8 h-8 border-2 border-nord8 border-t-transparent rounded-full animate-spin"})})}a.s(["default",()=>f])}];
+
+//# sourceMappingURL=FinalScrath_dsa-tracker_src_app_page_tsx_c23d83b9._.js.map

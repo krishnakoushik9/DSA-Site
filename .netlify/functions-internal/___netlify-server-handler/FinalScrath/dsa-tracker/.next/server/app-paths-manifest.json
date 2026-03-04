@@ -1,0 +1,21 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/about/page": "app/about/page.js",
+  "/api/compile/route": "app/api/compile/route.js",
+  "/api/reddit-memes/route": "app/api/reddit-memes/route.js",
+  "/api/scrape-perks/route": "app/api/scrape-perks/route.js",
+  "/calendar/page": "app/calendar/page.js",
+  "/community/page": "app/community/page.js",
+  "/company/page": "app/company/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/exams/page": "app/exams/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/login/page": "app/login/page.js",
+  "/memes/page": "app/memes/page.js",
+  "/page": "app/page.js",
+  "/perks/page": "app/perks/page.js",
+  "/search/page": "app/search/page.js",
+  "/startups/page": "app/startups/page.js",
+  "/workspace/page": "app/workspace/page.js"
+}
