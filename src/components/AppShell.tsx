@@ -11,6 +11,7 @@ import AuthGuard from '@/components/AuthGuard';
 import PremiumPopup from '@/components/PremiumPopup';
 import LearnAIPopup from '@/components/LearnAIPopup';
 import { useEffect, useState } from 'react';
+//Reset issue
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
