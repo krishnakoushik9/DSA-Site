@@ -14,12 +14,13 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-    apiKey: 'AIzaSyDhN5allGCmhJ9M0GR3RF7rL0e4CmGXRZU',
+    apiKey: 'AIzaSyDn0R7xle8t3PzClKt0VnhjO0X31uCz22A',
     authDomain: 'skill-dsa.firebaseapp.com',
     projectId: 'skill-dsa',
-    storageBucket: 'skill-dsa.appspot.com',
-    messagingSenderId: '000000000000', // placeholder — not needed for auth
-    appId: '1:000000000000:web:0000000000000000000000', // placeholder
+    storageBucket: 'skill-dsa.firebasestorage.app',
+    messagingSenderId: '301060310279',
+    appId: '1:301060310279:web:57bd6d5537b14af830b1a2',
+    measurementId: 'G-Q2419TNKPF',
 };
 
 // Initialize Firebase (only once)
