@@ -55,172 +55,6 @@ const usernameRules = [
     'Same username = same progress on any device',
 ];
 
-/* ─── Dev Card ─────────────────────────────────────────────────────────────── */
-function DevCard() {
-    const [easterEgg, setEasterEgg] = useState(false);
-    const [aboutOpen, setAboutOpen] = useState(false);
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const triggerEasterEgg = () => {
-        setEasterEgg(true);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => setEasterEgg(false), 3000);
-    };
-
-    return (
-        <div className="relative">
-            {/* Easter-egg cloud popup */}
-            {easterEgg && (
-                <div
-                    className="absolute -top-14 left-1/2 -translate-x-1/2 px-3 py-2 rounded-2xl text-xs font-bold whitespace-nowrap animate-bounce z-50 shadow-xl"
-                    style={{
-                        background: 'linear-gradient(135deg,#a3e635,#65a30d)',
-                        color: '#0f172a',
-                        boxShadow: '0 4px 24px rgba(163,230,53,0.3)',
-                    }}
-                >
-                    System Alert
-                    {/* Cloud tail */}
-                    <div
-                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0"
-                        style={{
-                            borderLeft: '8px solid transparent',
-                            borderRight: '8px solid transparent',
-                            borderTop: '8px solid #65a30d',
-                        }}
-                    />
-                </div>
-            )}
-
-            {/* Collapsed trigger */}
-            {!aboutOpen && (
-                <button
-                    onClick={() => setAboutOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
-                    style={{
-                        background: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
-                        borderColor: '#a3e635',
-                        color: '#0f172a',
-                        boxShadow: '0 4px 16px rgba(132,204,22,0.25)',
-                    }}
-                >
-                    <Code2 size={12} />
-                    About the Dev
-                    <Sparkles size={12} />
-                </button>
-            )}
-
-
-            {/* Expanded card */}
-            {aboutOpen && (
-                <div
-                    className="rounded-2xl border p-4 space-y-3 w-64 shadow-2xl"
-                    style={{
-                        background: 'color-mix(in srgb, var(--th-nord1) 90%, transparent)',
-                        borderColor: 'color-mix(in srgb, var(--th-nord3) 30%, transparent)',
-                        backdropFilter: 'blur(20px)',
-                    }}
-                >
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--th-nord8)' }}>
-                            About the Dev
-                        </span>
-                        <button
-                            onClick={() => setAboutOpen(false)}
-                            className="text-[10px] opacity-40 hover:opacity-70 transition-opacity"
-                            style={{ color: 'var(--th-nord4)' }}
-                        >
-                            ✕ close
-                        </button>
-                    </div>
-
-                    {/* Your profile (builder / operator) */}
-                    <div
-                        className="flex items-center gap-3 p-2.5 rounded-xl"
-                        style={{ background: 'color-mix(in srgb, var(--th-nord0) 60%, transparent)' }}
-                    >
-                        <div className="relative shrink-0">
-                            <Image
-                                src="https://avatars.slack-edge.com/2025-05-14/8891273522918_30c38bf627ac73075db6_512.png"
-                                alt="Profile"
-                                width={48}
-                                height={48}
-                                className="rounded-full object-cover ring-2"
-                                style={{ outline: '2px solid var(--th-nord8)', outlineOffset: '2px' }}
-                                unoptimized
-                            />
-                            <div
-                                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-                                style={{ background: 'var(--th-nord8)' }}
-                            >
-                                <Heart size={8} style={{ color: 'var(--th-nord0)' }} fill="currentColor" />
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold" style={{ color: 'var(--th-nord6)' }}>
-                                CMR Student
-                            </p>
-                            <p className="text-[10px] opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                Creator & Maintainer
-                            </p>
-                            <p className="text-[9px] opacity-35 mt-0.5 italic" style={{ color: 'var(--th-nord4)' }}>
-                                Built this so you don&apos;t have to suffer alone.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Alias dev (the easter egg one) */}
-                    <div
-                        className="flex items-center gap-3 p-2.5 rounded-xl"
-                        style={{ background: 'color-mix(in srgb, var(--th-nord0) 60%, transparent)' }}
-                    >
-                        <div className="relative shrink-0">
-                            <Image
-                                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRI6PCloXrrRBkiCNeOICzZ5imDUlBLIMX12g&s"
-                                alt="Ankith Yellanathi"
-                                width={48}
-                                height={48}
-                                className="rounded-full object-cover ring-2"
-                                style={{ outline: '2px solid #84cc16', outlineOffset: '2px' }}
-                                unoptimized
-                            />
-                            <div
-                                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-                                style={{ background: '#84cc16' }}
-                            >
-                                <Code2 size={7} style={{ color: '#0f172a' }} />
-                            </div>
-                        </div>
-                        <div>
-                            <button
-                                onClick={triggerEasterEgg}
-                                className="text-xs font-bold text-left transition-all hover:opacity-80 active:scale-95 cursor-pointer"
-                                style={{ color: 'var(--th-nord6)' }}
-                            >
-                                Ankith Yellanathi
-                            </button>
-                            <p className="text-[10px] opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                Alias / AI Wrangler
-                            </p>
-                            <p className="text-[9px] opacity-35 mt-0.5 italic" style={{ color: 'var(--th-nord4)' }}>
-                                Helped ship the system features.
-                            </p>
-                        </div>
-                    </div>
-
-                    <p
-                        className="text-[9px] text-center opacity-25"
-                        style={{ color: 'var(--th-nord4)' }}
-                    >
-                        Made with love for CMR students
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-}
-
 /* ─── Pathfinder Game ───────────────────────────────────────────────────────── */
 function PathfinderGame({ onFinish }: { onFinish: () => void }) {
     const [grid, setGrid] = useState<number[]>(new Array(49).fill(0));
@@ -368,65 +202,65 @@ export default function LoginPage() {
 
             {/* ── Left panel: branding ───────────────────────────────────────── */}
             <div
-                className="hidden lg:flex flex-col justify-between w-[380px] shrink-0 p-8 relative overflow-hidden border-r"
+                className="hidden lg:flex flex-col justify-between w-[340px] shrink-0 p-8 relative overflow-hidden border-r"
                 style={{ borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}
             >
                 {/* ambient blobs */}
                 <div className="absolute top-0 left-0 w-72 h-72 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" style={{ background: 'color-mix(in srgb, var(--th-nord8) 8%, transparent)' }} />
-                <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] translate-x-1/3 translate-y-1/3" style={{ background: 'color-mix(in srgb, var(--th-nord15) 5%, transparent)' }} />
+                <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] translate-x-1/3 -translate-y-1/3" style={{ background: 'color-mix(in srgb, var(--th-nord15) 5%, transparent)' }} />
 
                 {/* Logo */}
                 <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
-                        <Zap size={20} style={{ color: 'var(--th-nord0)' }} />
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
+                        <Zap size={16} style={{ color: 'var(--th-nord0)' }} />
                     </div>
-                    <span className="font-bold text-lg tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
+                    <span className="font-bold text-base tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
                 </div>
 
                 {/* Hero */}
-                <div className="relative z-10 space-y-8">
+                <div className="relative z-10 space-y-6">
                     <div>
-                        <h2 className="text-3xl font-extrabold leading-tight mb-4" style={{ color: 'var(--th-nord6)' }}>
+                        <h2 className="text-[26px] font-extrabold leading-[1.15] mb-4" style={{ color: 'var(--th-nord6)' }}>
                             Track your DSA journey and<br />
                             <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                stay consistent until placement.
+                                stay consistent.
                             </span>
                         </h2>
 
-                        <div className="mb-6 p-4 rounded-xl border bg-white/[0.02] border-white/5 relative overflow-hidden group">
+                        <div className="mb-4 p-3 rounded-xl border bg-white/[0.02] border-white/5 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
-                            <p className="text-sm font-semibold opacity-80" style={{ color: 'var(--th-nord6)' }}>
-                                Most students quit DSA after 3 weeks.
+                            <p className="text-[12px] font-medium opacity-80" style={{ color: 'var(--th-nord6)' }}>
+                                Most quit DSA after 3 weeks.
                             </p>
-                            <p className="text-sm font-semibold mt-1" style={{ color: 'var(--th-nord8)' }}>
-                                Track your progress so you don&apos;t.
+                            <p className="text-[12px] font-medium mt-0.5" style={{ color: 'var(--th-nord8)' }}>
+                                Track progress so you don&apos;t.
                             </p>
                         </div>
 
                         {userCount && (
-                            <div className="flex items-center gap-2 mb-5 bg-white/5 py-1 px-3.5 rounded-full w-fit border border-white/10">
-                                <Users size={11} className="text-[#84cc16]" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--th-nord4)' }}>
-                                    Joined by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> placement aspirants
+                            <div className="flex items-center gap-2 mb-4 bg-white/5 py-1 px-3 rounded-full w-fit border border-white/10">
+                                <Users size={10} className="text-[#84cc16]" />
+                                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--th-nord4)' }}>
+                                    Joined by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> aspirants
                                 </span>
                             </div>
                         )}
-                        <p className="text-sm leading-relaxed opacity-60 max-w-[300px]" style={{ color: 'var(--th-nord4)' }}>
-                            Save your progress, build streaks, and solve 755+ curated questions to crack your dream job.
+                        <p className="text-[12px] leading-relaxed opacity-60 max-w-[280px]" style={{ color: 'var(--th-nord4)' }}>
+                            Save your progress, build streaks, and solve curated questions to crack your dream job.
                         </p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                         {features.map((feat, i) => {
                             const Icon = feat.icon;
                             return (
-                                <div key={i} className="flex items-center gap-3.5 p-3.5 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
-                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
-                                        <Icon size={16} style={{ color: 'var(--th-nord8)' }} />
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
+                                        <Icon size={14} style={{ color: 'var(--th-nord8)' }} />
                                     </div>
                                     <div>
-                                        <p className="text-[13px] font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
-                                        <p className="text-[11px] opacity-40" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
+                                        <p className="text-[12px] font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
+                                        <p className="text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
                                     </div>
                                 </div>
                             );
@@ -434,10 +268,9 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Dev card & actions at bottom */}
-                <div className="relative z-10 flex flex-col gap-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <DevCard />
+                {/* Actions at bottom */}
+                <div className="relative z-10 flex flex-col gap-2.5">
+                    <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowGitCity(true)}
                             className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all hover:scale-105 active:scale-95 shadow-lg bg-white text-gray-900 border-white hover:bg-gray-100"
@@ -453,29 +286,29 @@ export default function LoginPage() {
             </div>
 
             {/* ── Right panel: form ─────────────────────────────────────────── */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 relative overflow-hidden">
+            <div className="flex-1 flex items-center justify-center p-6 lg:p-10 relative overflow-hidden">
                 {/* Subtle animated background shapes */}
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl animate-[pulse_8s_infinite_alternate]" />
                 <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/[0.015] rounded-full blur-3xl animate-[pulse_10s_infinite_alternate-reverse]" />
 
-                <div className="w-full max-w-sm space-y-10 relative z-10">
+                <div className="w-full max-w-[340px] space-y-8 relative z-10">
 
                     {/* Mobile logo */}
                     <div className="flex lg:hidden items-center justify-center gap-2 mb-2">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
-                            <Zap size={18} style={{ color: 'var(--th-nord0)' }} />
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
+                            <Zap size={16} style={{ color: 'var(--th-nord0)' }} />
                         </div>
                         <span className="font-bold text-base tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
                     </div>
 
                     {/* ── Step: Username ───────────────────────────────────── */}
                     {step === STEPS.USERNAME && (
-                        <div className="space-y-8">
+                        <div className="space-y-6">
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                                <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
                                     Sign in for Consistency
                                 </h1>
-                                <p className="text-sm mt-2 opacity-50 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
+                                <p className="text-[13px] mt-1.5 opacity-50 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
                                     Sign in to save your DSA progress and streaks.
                                 </p>
                             </div>
@@ -484,7 +317,7 @@ export default function LoginPage() {
                             <button
                                 onClick={handleGithubLogin}
                                 disabled={githubLoading}
-                                className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl border border-white/10"
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-xl border border-white/10"
                                 style={{
                                     background: githubLoading
                                         ? 'var(--th-nord3)'
@@ -725,9 +558,34 @@ export default function LoginPage() {
                                 <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--th-nord8)' }}>
                                     <Info size={16} /> Why the Alias?
                                 </h3>
-                                <div className="text-xs leading-relaxed opacity-70 space-y-3" style={{ color: 'var(--th-nord6)' }}>
-                                    <p>Ankith Yellanathi is a tribute to a developer who was once a king, then a ghost, now an AI Wrangler.</p>
-                                    <p>He uses an alias because the real man died in the great server crash of 2024. This version is just code. Pure, cold, efficient code.</p>
+                                <div className="text-xs leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
+                                    <p>The developer goes by <strong>Ankith Yellanathi</strong> — though historians, philosophers, and a few confused database logs claim he has existed since the <strong>age of the Buddha</strong>.</p>
+                                    <p>Legend says he was once a wandering student who tried to master logic under a Bodhi tree, only to discover that enlightenment is easier than debugging asynchronous code.</p>
+                                    <p>Over the centuries he held many roles: monk, mathematician, wandering storyteller, part-time cook of suspiciously experimental noodles, and occasionally, a developer.</p>
+                                    <p>His identity became… complicated.</p>
+                                    <p>At one point he fell into a tragic love story involving a poet, a misplaced Git repository, and a German Shepherd named <strong>Compiler</strong> who judged every commit silently. The relationship ended during what historians now call <strong>The Great Merge Conflict</strong>.</p>
+                                    <p>After the breakup, Ankith swore never to trust romance again — only <strong>clean code and deterministic algorithms</strong>.</p>
+                                    <hr className="border-white/10 my-4" />
+                                    <p>Things escalated.</p>
+                                    <p>At some unclear point in the 1800s he allegedly entered a <strong>racing competition against a group of extremely angry bulls</strong>, which he claims taught him two important lessons:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>never run production code without testing</li>
+                                        <li>never race animals that weigh more than your entire tech stack</li>
+                                    </ul>
+                                    <hr className="border-white/10 my-4" />
+                                    <p>There are also records of Ankith participating in a strange contest known as <strong>The Titanic Regatta</strong>, where developers attempted to optimize boat steering algorithms while the ship slowly headed toward an iceberg.</p>
+                                    <p>His algorithm worked perfectly. The iceberg, however, did not respect version control.</p>
+                                    <hr className="border-white/10 my-4" />
+                                    <p>Later myths say he accidentally wandered into a <strong>war between gods</strong>.</p>
+                                    <p>Zeus demanded lightning-fast computation.<br />Odin wanted distributed systems.<br />Shiva simply asked if the servers could survive destruction cycles.</p>
+                                    <p>Ankith responded the only way a developer could: He deployed a patch.</p>
+                                    <p>No one understood the code, but the universe kept running, so everyone agreed to leave it alone.</p>
+                                    <hr className="border-white/10 my-4" />
+                                    <p>Then came the <strong>Great Server Crash of 2024</strong>.</p>
+                                    <p>The real Ankith allegedly disappeared during a catastrophic incident involving a corrupted backup, twelve cups of coffee, and an experimental script named <code>final_final_really_final_v7.py</code>.</p>
+                                    <p>What remains today is uncertain. Some say it is just an alias. Some say it is a ghost in the machine. Others believe it is simply <strong>a student who has been learning for 2,500 years and still hasn&apos;t finished debugging life</strong>.</p>
+                                    <p>What we know for sure is this:<br />The developer behind this project is <strong>Ankith Yellanathi</strong>.</p>
+                                    <p>Possibly human.<br />Possibly code.<br />Definitely still fixing bugs.</p>
                                 </div>
                             </div>
                         )}
