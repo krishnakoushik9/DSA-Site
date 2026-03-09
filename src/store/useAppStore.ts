@@ -6,6 +6,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { UserProgress, UserProfile, ExamSession } from '@/lib/types';
 import { formatDate } from '@/lib/scheduler';
 import { saveToFirestore, loadFromFirestore, getUserPasscodeHash, hashPasscode } from '@/lib/firebase';
+import { signInWithGitHub, type GitHubUserInfo } from '@/lib/firebaseAuth';
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -43,6 +44,7 @@ interface AppState extends UserProgress {
 
     // Auth actions
     login: (username: string, passcode: string) => Promise<{ success: boolean; error?: string; isNew?: boolean }>;
+    loginWithGithub: () => Promise<{ success: boolean; error?: string; isNew?: boolean }>;
     logout: () => void;
 
     // Data actions
@@ -218,6 +220,134 @@ export const useAppStore = create<AppState>()(
                     set({ syncStatus: 'synced', lastSyncedAt: new Date().toISOString() });
 
                     return { success: true, isNew: !isRepair };
+                }
+            },
+
+            // =============== GITHUB AUTH ===============
+            loginWithGithub: async () => {
+                try {
+                    const ghUser: GitHubUserInfo | null = await signInWithGitHub();
+                    if (!ghUser) return { success: false, error: 'GitHub sign-in was cancelled.' };
+
+                    // Use GitHub username (lowercase) as the Firestore document key
+                    const username = (ghUser.githubUsername || ghUser.displayName || ghUser.uid)
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_-]/g, '')
+                        .slice(0, 20);
+
+                    if (!username || username.length < 2) {
+                        return { success: false, error: 'Could not determine a valid username from GitHub.' };
+                    }
+
+                    // A deterministic passcode hash derived from the GitHub UID
+                    const ghHash = hashPasscode(`gh_${ghUser.uid}_auth`);
+
+                    // Check if a document already exists for this username
+                    const existingData = await loadFromFirestore(username);
+
+                    if (existingData?.data) {
+                        // ── EXISTING USER: load their data ──
+                        const cloudData = existingData.data as Record<string, unknown>;
+
+                        // If the existing doc has a passcodeHash that doesn't match our GH hash,
+                        // it means this username belongs to a passcode-based account.
+                        // We check if the doc has a githubUid field matching us → allow login.
+                        // Otherwise, if no githubUid, check passcode match.
+                        const existingGhUid = cloudData.githubUid as string | undefined;
+                        const existingHash = existingData.passcodeHash;
+
+                        if (existingGhUid && existingGhUid === ghUser.uid) {
+                            // ✅ This account is linked to this GitHub
+                        } else if (existingHash && existingHash !== ghHash && !existingGhUid) {
+                            // ❌ Username taken by a passcode user — cannot hijack
+                            return {
+                                success: false,
+                                error: `Username "${username}" is already taken by another account. The owner can link GitHub from their settings.`,
+                            };
+                        }
+
+                        // Load data
+                        set({
+                            username,
+                            passcodeHash: existingHash || ghHash,
+                            isLoggedIn: true,
+                            syncStatus: 'syncing',
+                            _cloudReady: false,
+                        });
+
+                        set({
+                            completedQuestions: (cloudData.completedQuestions as string[]) || [],
+                            dailyTasks: (cloudData.dailyTasks as UserProgress['dailyTasks']) || {},
+                            examSessions: (cloudData.examSessions as ExamSession[]) || [],
+                            questionNotes: (cloudData.questionNotes as UserProgress['questionNotes']) || {},
+                            topicNotes: (cloudData.topicNotes as UserProgress['topicNotes']) || {},
+                            customQuestions: (cloudData.customQuestions as UserProgress['customQuestions']) || [],
+                            rating: (cloudData.rating as number) || 0,
+                            streak: (cloudData.streak as number) || 0,
+                            lastActiveDate: (cloudData.lastActiveDate as string) || '',
+                            profile: {
+                                ...defaultProfile,
+                                ...(cloudData.profile as Partial<UserProfile>),
+                                // Update profile with GitHub info if not already set
+                                displayName: (cloudData.profile as Partial<UserProfile>)?.displayName || ghUser.displayName,
+                                github: (cloudData.profile as Partial<UserProfile>)?.github || `https://github.com/${ghUser.githubUsername}`,
+                            },
+                            excalidrawData: get().excalidrawData || {},
+                            syncStatus: 'synced',
+                            lastSyncedAt: new Date().toISOString(),
+                            _cloudReady: true,
+                            logicBuildingCodes: (cloudData.logicBuildingCodes as Record<string, string>) || {},
+                            deepLearningProgress: (cloudData.deepLearningProgress as Record<string, boolean>) || {},
+                            credits: (cloudData.credits as number) ?? 300,
+                            isPremium: (cloudData.isPremium as boolean) || false,
+                            premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
+                            premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
+                        });
+
+                        // Ensure githubUid is saved to the document
+                        const dataToSync = {
+                            ...buildSyncData(get()),
+                            githubUid: ghUser.uid,
+                            githubUsername: ghUser.githubUsername,
+                            githubPhotoURL: ghUser.photoURL,
+                            githubEmail: ghUser.email,
+                        };
+                        await saveToFirestore(username, dataToSync, existingHash || ghHash);
+
+                        return { success: true, isNew: false };
+                    } else {
+                        // ── NEW USER from GitHub ──
+                        const newProfile: UserProfile = {
+                            ...defaultProfile,
+                            displayName: ghUser.displayName,
+                            github: `https://github.com/${ghUser.githubUsername}`,
+                        };
+
+                        set({
+                            ...initialProgress,
+                            username,
+                            passcodeHash: ghHash,
+                            isLoggedIn: true,
+                            _cloudReady: true,
+                            profile: newProfile,
+                            credits: 300, // 🎁 Welcome bonus
+                        });
+
+                        const dataToSync = {
+                            ...buildSyncData(get()),
+                            githubUid: ghUser.uid,
+                            githubUsername: ghUser.githubUsername,
+                            githubPhotoURL: ghUser.photoURL,
+                            githubEmail: ghUser.email,
+                        };
+                        await saveToFirestore(username, dataToSync, ghHash);
+                        set({ syncStatus: 'synced', lastSyncedAt: new Date().toISOString() });
+
+                        return { success: true, isNew: true };
+                    }
+                } catch (error) {
+                    console.error('GitHub login error:', error);
+                    return { success: false, error: 'GitHub sign-in failed. Please try again.' };
                 }
             },
 

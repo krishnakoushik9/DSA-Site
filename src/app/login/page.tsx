@@ -221,7 +221,8 @@ export default function LoginPage() {
     const [step, setStep] = useState<Step>(STEPS.USERNAME);
     const [mounted, setMounted] = useState(false);
     const [isNewUser, setIsNewUser] = useState(false);
-    const { isLoggedIn, login } = useAppStore();
+    const [githubLoading, setGithubLoading] = useState(false);
+    const { isLoggedIn, login, loginWithGithub } = useAppStore();
     const router = useRouter();
     const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -282,6 +283,23 @@ export default function LoginPage() {
         setPasscode(['', '', '', '']);
         setError('');
         setIsNewUser(false);
+    };
+
+    const handleGithubLogin = async () => {
+        setGithubLoading(true);
+        setError('');
+        try {
+            const result = await loginWithGithub();
+            if (result.success) {
+                router.push('/dashboard');
+            } else {
+                setError(result.error || 'GitHub sign-in failed.');
+            }
+        } catch {
+            setError('GitHub sign-in failed. Please try again.');
+        } finally {
+            setGithubLoading(false);
+        }
     };
 
     if (!mounted || isLoggedIn) return null;
@@ -439,6 +457,48 @@ export default function LoginPage() {
                             <div className="flex justify-center lg:hidden pt-1">
                                 <DevCard />
                             </div>
+
+                            {/* ── Divider ────────────────────────────── */}
+                            <div className="flex items-center gap-3 pt-1">
+                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
+                                <span className="text-[10px] font-medium uppercase tracking-wider opacity-30" style={{ color: 'var(--th-nord4)' }}>or</span>
+                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
+                            </div>
+
+                            {/* ── GitHub Login Button ─────────────────── */}
+                            <button
+                                onClick={handleGithubLogin}
+                                disabled={githubLoading}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] relative overflow-hidden group"
+                                style={{
+                                    background: githubLoading
+                                        ? 'color-mix(in srgb, var(--th-nord3) 20%, transparent)'
+                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 50%, #24292e 100%)',
+                                    color: githubLoading ? 'color-mix(in srgb, var(--th-nord4) 40%, transparent)' : '#ffffff',
+                                    border: '1px solid color-mix(in srgb, var(--th-nord3) 30%, transparent)',
+                                    boxShadow: githubLoading ? 'none' : '0 4px 16px rgba(0,0,0,0.3)',
+                                    cursor: githubLoading ? 'not-allowed' : 'pointer',
+                                }}
+                            >
+                                {/* Hover glow effect */}
+                                <div
+                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(88,166,255,0.08) 0%, rgba(163,230,53,0.06) 100%)',
+                                    }}
+                                />
+                                {githubLoading ? (
+                                    <div
+                                        className="w-4 h-4 border-2 rounded-full animate-spin"
+                                        style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }}
+                                    />
+                                ) : (
+                                    <>
+                                        <Github size={18} />
+                                        <span>Continue with GitHub</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
                     )}
 
