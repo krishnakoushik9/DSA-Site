@@ -23,8 +23,17 @@ import {
     Code2,
     Github,
     Heart,
+    Users,
+    Flame,
+    ShieldCheck,
+    Gamepad2,
+    ExternalLink,
+    Mail,
+    Search,
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { getUserCount } from '@/lib/firebase';
+import { format } from 'date-fns';
 
 const STEPS = {
     USERNAME: 'username',
@@ -34,8 +43,8 @@ type Step = typeof STEPS[keyof typeof STEPS];
 
 const features = [
     { icon: Brain, label: '755+ Questions', desc: 'FINAL450 + Fraz sheets' },
-    { icon: Target, label: 'Smart Schedule', desc: 'Basics → Advanced path' },
-    { icon: Trophy, label: 'Gamified Progress', desc: 'Rating & streaks' },
+    { icon: Target, label: 'Smart Study Path', desc: 'Arrays → Graphs → DP flow' },
+    { icon: Flame, label: 'Streaks & Ratings', desc: 'Daily DSA streak tracking' },
     { icon: BookOpen, label: 'Workspace', desc: 'Notes + whiteboard' },
 ];
 
@@ -212,6 +221,73 @@ function DevCard() {
     );
 }
 
+/* ─── Heatmap Preview ───────────────────────────────────────────────────────── */
+function HeatmapPreview() {
+    return (
+        <div className="p-4 rounded-2xl border space-y-3" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Flame size={14} className="text-orange-500" />
+                    <span className="text-xs font-bold" style={{ color: 'var(--th-nord6)' }}>14 Day Streak</span>
+                </div>
+                <span className="text-[10px] opacity-40 font-mono" style={{ color: 'var(--th-nord4)' }}>42 solved</span>
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+                {[0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1].map((v, i) => (
+                    <div
+                        key={i}
+                        className="w-full aspect-square rounded-[2px]"
+                        style={{
+                            background: v === 1 ? 'var(--th-nord14)' : 'color-mix(in srgb, var(--th-nord3) 20%, transparent)',
+                            opacity: v === 1 ? 0.8 : 0.4
+                        }}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/* ─── Pathfinder Game ───────────────────────────────────────────────────────── */
+function PathfinderGame({ onFinish }: { onFinish: () => void }) {
+    const [grid, setGrid] = useState<number[]>(new Array(49).fill(0));
+    const [pos, setPos] = useState(0);
+    const target = 48;
+
+    const move = (targetPos: number) => {
+        if (targetPos < 0 || targetPos >= 49) return;
+        setPos(targetPos);
+        if (targetPos === target) onFinish();
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#84cc16]">Solve to see profile</p>
+                <p className="text-[10px] opacity-40">Get to the bottom-right!</p>
+            </div>
+            <div className="grid grid-cols-7 gap-1 bg-[#1a202c] p-2 rounded-xl border border-white/5">
+                {new Array(49).fill(0).map((_, i) => (
+                    <div
+                        key={i}
+                        className={`w-full aspect-square rounded-sm border transition-all ${i === pos ? 'bg-[#84cc16] shadow-[0_0_10px_#84cc16]' : i === target ? 'bg-[#ef4444] animate-pulse' : 'bg-white/5 border-white/5'}`}
+                    >
+                        {i === pos && <div className="w-full h-full flex items-center justify-center text-[10px]">📍</div>}
+                    </div>
+                ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                <div />
+                <button onClick={() => move(pos - 7)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">↑</button>
+                <div />
+                <button onClick={() => move(pos - 1)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">←</button>
+                <button onClick={() => move(pos + 7)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">↓</button>
+                <button onClick={() => move(pos + 1)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">→</button>
+            </div>
+        </div>
+    );
+}
+
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 export default function LoginPage() {
     const [username, setUsername] = useState('');
@@ -222,11 +298,17 @@ export default function LoginPage() {
     const [mounted, setMounted] = useState(false);
     const [isNewUser, setIsNewUser] = useState(false);
     const [githubLoading, setGithubLoading] = useState(false);
+    const [userCount, setUserCount] = useState<number | null>(null);
+    const [footerModal, setFooterModal] = useState<'about' | 'privacy' | 'github' | 'contact' | null>(null);
+    const [showGithubProfile, setShowGithubProfile] = useState(false);
     const { isLoggedIn, login, loginWithGithub } = useAppStore();
     const router = useRouter();
     const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        setMounted(true);
+        getUserCount().then(setUserCount);
+    }, []);
     useEffect(() => {
         if (mounted && isLoggedIn) router.push('/dashboard');
     }, [mounted, isLoggedIn, router]);
@@ -330,14 +412,22 @@ export default function LoginPage() {
                 {/* Hero */}
                 <div className="relative z-10 space-y-6">
                     <div>
-                        <h2 className="text-3xl font-extrabold leading-tight mb-3" style={{ color: 'var(--th-nord6)' }}>
-                            Your placement<br />
+                        <h2 className="text-3xl font-extrabold leading-tight mb-2" style={{ color: 'var(--th-nord6)' }}>
+                            Track your DSA journey and<br />
                             <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                preparation hub.
+                                stay consistent until placement.
                             </span>
                         </h2>
+                        {userCount && (
+                            <div className="flex items-center gap-2 mb-4 bg-white/5 py-1 px-3 rounded-full w-fit border border-white/5">
+                                <Users size={12} className="text-[#84cc16]" />
+                                <span className="text-[10px] font-bold" style={{ color: 'var(--th-nord4)' }}>
+                                    Used by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> students preparing for placements
+                                </span>
+                            </div>
+                        )}
                         <p className="text-sm leading-relaxed opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                            Track your DSA journey, build streaks, collaborate and land your dream job.
+                            Save your progress, build streaks, and solve 755+ curated questions to crack your dream job.
                         </p>
                     </div>
 
@@ -357,6 +447,8 @@ export default function LoginPage() {
                             );
                         })}
                     </div>
+
+                    <HeatmapPreview />
                 </div>
 
                 {/* Dev card at bottom */}
@@ -385,30 +477,49 @@ export default function LoginPage() {
                         <div className="space-y-5">
                             <div>
                                 <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
-                                    Welcome 👋
+                                    Sign in for Consistency 🚀
                                 </h1>
                                 <p className="text-sm mt-1 opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                    Sign in or create your free account to continue.
+                                    Sign in to save your DSA progress and streaks.
                                 </p>
                             </div>
 
-                            {/* How it works */}
-                            <div className="rounded-xl p-4 space-y-2 border" style={{ background: 'color-mix(in srgb, var(--th-nord8) 5%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord8) 15%, transparent)' }}>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Info size={12} style={{ color: 'var(--th-nord8)' }} />
-                                    <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--th-nord8)' }}>How it works</span>
-                                </div>
-                                {usernameRules.map((rule, i) => (
-                                    <div key={i} className="flex items-start gap-2">
-                                        <CheckCircle2 size={11} className="mt-0.5 shrink-0 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                        <p className="text-[11px] leading-snug opacity-60" style={{ color: 'var(--th-nord4)' }}>{rule}</p>
-                                    </div>
-                                ))}
+                            {/* ── GitHub Login Button (PRIMARY) ───────── */}
+                            <button
+                                onClick={handleGithubLogin}
+                                disabled={githubLoading}
+                                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl"
+                                style={{
+                                    background: githubLoading
+                                        ? 'color-mix(in srgb, var(--th-nord3) 20%, transparent)'
+                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 50%, #24292e 100%)',
+                                    color: githubLoading ? 'color-mix(in srgb, var(--th-nord4) 40%, transparent)' : '#ffffff',
+                                    border: '1px solid color-mix(in srgb, var(--th-nord3) 30%, transparent)',
+                                    cursor: githubLoading ? 'not-allowed' : 'pointer',
+                                }}
+                            >
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(135deg, rgba(88,166,255,0.15) 0%, rgba(163,230,53,0.1) 100%)' }} />
+                                {githubLoading ? (
+                                    <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
+                                ) : (
+                                    <>
+                                        <Github size={20} />
+                                        <span>Start with GitHub</span>
+                                        <Sparkles size={14} className="ml-1 text-[#84cc16]" />
+                                    </>
+                                )}
+                            </button>
+
+                            {/* ── Divider ────────────────────────────── */}
+                            <div className="flex items-center gap-3 py-2">
+                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
+                                <span className="text-[10px] font-medium uppercase tracking-wider opacity-30" style={{ color: 'var(--th-nord4)' }}>or create a username</span>
+                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
                             </div>
 
                             {/* Username field */}
                             <div>
-                                <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2 opacity-50" style={{ color: 'var(--th-nord4)' }}>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 opacity-50" style={{ color: 'var(--th-nord4)' }}>
                                     Username
                                 </label>
                                 <div className="relative">
@@ -418,15 +529,14 @@ export default function LoginPage() {
                                         value={username}
                                         onChange={(e) => { setUsername(e.target.value); setError(''); }}
                                         onKeyDown={(e) => e.key === 'Enter' && handleUsernameNext()}
-                                        placeholder="your_username"
+                                        placeholder="your_name"
                                         maxLength={20}
-                                        className="w-full pl-9 pr-10 py-3.5 rounded-xl text-sm font-medium border focus:outline-none focus:ring-2 transition-all"
+                                        className="w-full pl-9 pr-10 py-3.5 rounded-xl text-sm font-medium border focus:outline-none focus:ring-2 transition-all shadow-inner"
                                         style={{
                                             background: 'color-mix(in srgb, var(--th-nord1) 70%, transparent)',
                                             borderColor: 'color-mix(in srgb, var(--th-nord3) 25%, transparent)',
                                             color: 'var(--th-nord5)',
                                         }}
-                                        autoFocus
                                         autoComplete="username"
                                     />
                                     {username.trim().length >= 5 && (
@@ -445,60 +555,24 @@ export default function LoginPage() {
                                 disabled={!username.trim()}
                                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]"
                                 style={!username.trim()
-                                    ? { background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)', color: 'color-mix(in srgb, var(--th-nord4) 25%, transparent)', cursor: 'not-allowed' }
-                                    : { background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', color: 'var(--th-nord0)' }
+                                    ? { background: 'color-mix(in srgb, var(--th-nord3) 10%, transparent)', color: 'opacity-20', cursor: 'not-allowed' }
+                                    : { background: 'var(--th-nord3)', color: 'var(--th-nord6)', border: '1px solid var(--th-nord4)' }
                                 }
                             >
                                 <span>Continue</span>
                                 <ArrowRight size={16} />
                             </button>
 
-                            {/* Mobile dev card */}
-                            <div className="flex justify-center lg:hidden pt-1">
-                                <DevCard />
+                            <div className="flex flex-col items-center gap-2 pt-2">
+                                <div className="flex items-center gap-2 text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>
+                                    <ShieldCheck size={12} className="text-[#84cc16]" />
+                                    <span>Secure login via Firebase Auth</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>
+                                    <Lock size={12} />
+                                    <span>Your progress is securely synced across devices</span>
+                                </div>
                             </div>
-
-                            {/* ── Divider ────────────────────────────── */}
-                            <div className="flex items-center gap-3 pt-1">
-                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
-                                <span className="text-[10px] font-medium uppercase tracking-wider opacity-30" style={{ color: 'var(--th-nord4)' }}>or</span>
-                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
-                            </div>
-
-                            {/* ── GitHub Login Button ─────────────────── */}
-                            <button
-                                onClick={handleGithubLogin}
-                                disabled={githubLoading}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] relative overflow-hidden group"
-                                style={{
-                                    background: githubLoading
-                                        ? 'color-mix(in srgb, var(--th-nord3) 20%, transparent)'
-                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 50%, #24292e 100%)',
-                                    color: githubLoading ? 'color-mix(in srgb, var(--th-nord4) 40%, transparent)' : '#ffffff',
-                                    border: '1px solid color-mix(in srgb, var(--th-nord3) 30%, transparent)',
-                                    boxShadow: githubLoading ? 'none' : '0 4px 16px rgba(0,0,0,0.3)',
-                                    cursor: githubLoading ? 'not-allowed' : 'pointer',
-                                }}
-                            >
-                                {/* Hover glow effect */}
-                                <div
-                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(88,166,255,0.08) 0%, rgba(163,230,53,0.06) 100%)',
-                                    }}
-                                />
-                                {githubLoading ? (
-                                    <div
-                                        className="w-4 h-4 border-2 rounded-full animate-spin"
-                                        style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }}
-                                    />
-                                ) : (
-                                    <>
-                                        <Github size={18} />
-                                        <span>Continue with GitHub</span>
-                                    </>
-                                )}
-                            </button>
                         </div>
                     )}
 
@@ -628,6 +702,108 @@ export default function LoginPage() {
                     </p>
                 </div>
             </div>
+
+            {/* ── Footer ─────────────────────────────────────────────────── */}
+            <div
+                className="absolute bottom-6 w-full flex justify-center gap-6 text-[10px] font-bold uppercase tracking-widest opacity-30"
+                style={{ color: 'var(--th-nord4)' }}
+            >
+                <button onClick={() => setFooterModal('about')} className="hover:opacity-100 transition-opacity">About</button>
+                <button onClick={() => setFooterModal('privacy')} className="hover:opacity-100 transition-opacity">Privacy</button>
+                <button onClick={() => setFooterModal('github')} className="hover:opacity-100 transition-opacity">GitHub</button>
+                <button onClick={() => setFooterModal('contact')} className="hover:opacity-100 transition-opacity">Contact</button>
+            </div>
+
+            {/* ── Footer Modals ─────────────────────────────────────────── */}
+            {footerModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+                    <div
+                        className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl relative"
+                        style={{ background: 'var(--th-nord0)', borderColor: 'var(--th-nord3)' }}
+                    >
+                        <button
+                            onClick={() => { setFooterModal(null); setShowGithubProfile(false); }}
+                            className="absolute top-4 right-4 text-xs opacity-40 hover:opacity-100"
+                        >✕</button>
+
+                        {footerModal === 'about' && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--th-nord8)' }}>
+                                    <Info size={16} /> Why the Alias?
+                                </h3>
+                                <div className="text-xs leading-relaxed opacity-70 space-y-3" style={{ color: 'var(--th-nord6)' }}>
+                                    <p>Ankith Yellanathi isn&apos;t just a name. It&apos;s a tribute to a developer who was once a king, then a ghost, now an AI Wrangler.</p>
+                                    <p>&quot;Tell me... do you bleed code?&quot; asked the AI. The developer just looked at the terminal. It was like the Titanic — beautiful, massive, but hit an iceberg of technical debt. Like Kratos, he burned his past to forge this tool for you.</p>
+                                    <p>He uses an alias because the real man died in the great server crash of 2024. This version is just... code. Pure, cold, efficient code.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {footerModal === 'privacy' && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold flex items-center gap-2 text-red-400">
+                                    <ShieldCheck size={16} /> The Cold Truth
+                                </h3>
+                                <div className="text-xs leading-relaxed opacity-70 space-y-3" style={{ color: 'var(--th-nord6)' }}>
+                                    <p>Let&apos;s be honest. I don&apos;t care about your privacy in the way lawyers want me to.</p>
+                                    <p>Your data is on Firebase. Is it safe? Google says yes. But in a world where even the God of War can be brought down, nothing is truly unhackable. I capture your solves, your notes, and your streaks to make this app work.</p>
+                                    <p>If you&apos;re worried about hackers finding out you couldn&apos;t solve &quot;Two Sum&quot; on your first try... well, maybe don&apos;t use the internet.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {footerModal === 'github' && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--th-nord14)' }}>
+                                    <Gamepad2 size={16} /> The Developer&apos;s Lair
+                                </h3>
+                                {showGithubProfile ? (
+                                    <div className="flex flex-col items-center gap-4 p-4 rounded-xl bg-white/5 border border-[#84cc16]/20">
+                                        <Image
+                                            src="https://avatars.slack-edge.com/2025-05-14/8891273522918_30c38bf627ac73075db6_512.png"
+                                            alt="Profile"
+                                            width={80}
+                                            height={80}
+                                            className="rounded-full ring-4 ring-[#84cc16]"
+                                            unoptimized
+                                        />
+                                        <div className="text-center">
+                                            <h4 className="text-sm font-bold">krishnakoushik9</h4>
+                                            <p className="text-[10px] opacity-50">Builder, Sufferer, Leader</p>
+                                        </div>
+                                        <a
+                                            href="https://github.com/krishnakoushik9"
+                                            target="_blank"
+                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#84cc16] text-[#0f172a] text-[10px] font-bold"
+                                        >
+                                            View Github <ExternalLink size={12} />
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <PathfinderGame onFinish={() => setShowGithubProfile(true)} />
+                                )}
+                            </div>
+                        )}
+
+                        {footerModal === 'contact' && (
+                            <div className="space-y-4 text-center">
+                                <h3 className="text-sm font-bold flex items-center justify-center gap-2" style={{ color: 'var(--th-nord15)' }}>
+                                    <Mail size={16} /> Signal the Bat
+                                </h3>
+                                <p className="text-xs opacity-60">Wanna reach out? I might be in Gotham.</p>
+                                <a
+                                    href="https://www.instagram.com/thebatman/"
+                                    target="_blank"
+                                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-xs shadow-lg"
+                                >
+                                    DM on Instagram <ExternalLink size={14} />
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <DancingGirl3DLazy mode="login" />
         </div>
     );

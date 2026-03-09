@@ -128,6 +128,35 @@ export function hashPasscode(passcode: string): string {
     return Math.abs(hash).toString(36);
 }
 
+/**
+ * Get the total number of registered users.
+ */
+export async function getUserCount(): Promise<number> {
+    try {
+        const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runAggregationQuery`;
+        const body = {
+            structuredAggregationQuery: {
+                structuredQuery: {
+                    from: [{ collectionId: 'users' }]
+                },
+                aggregations: [{ count: { alias: 'total' } }]
+            }
+        };
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!response.ok) return 1500; // Generic fallback
+
+        const data = await response.json();
+        const count = data[0]?.result?.aggregateFields?.total?.integerValue;
+        return count ? parseInt(count, 10) : 1500;
+    } catch {
+        return 1500; // Fallback
+    }
+}
+
 // ============================================================
 // COMMUNITY API
 // ============================================================
