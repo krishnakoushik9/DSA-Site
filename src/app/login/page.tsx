@@ -109,6 +109,7 @@ export default function LoginPage() {
     const [footerModal, setFooterModal] = useState<'about' | 'privacy' | 'github' | 'contact' | null>(null);
     const [showGithubProfile, setShowGithubProfile] = useState(false);
     const [showGitCity, setShowGitCity] = useState(false);
+    const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
     const { isLoggedIn, login, loginWithGithub } = useAppStore();
     const router = useRouter();
     const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -313,17 +314,35 @@ export default function LoginPage() {
                                 </p>
                             </div>
 
+                            {/* ── Privacy Checkbox ───────── */}
+                            <div className="flex items-start gap-3 mt-4">
+                                <button
+                                    onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
+                                    className="w-5 h-5 rounded border border-white/20 flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                                    style={{
+                                        background: acceptedPrivacy ? '#84cc16' : 'rgba(255,255,255,0.05)',
+                                        borderColor: acceptedPrivacy ? '#84cc16' : 'rgba(255,255,255,0.2)'
+                                    }}
+                                >
+                                    {acceptedPrivacy && <CheckCircle2 size={12} className="text-gray-900" />}
+                                </button>
+                                <p className="text-[11px] leading-relaxed opacity-60" style={{ color: 'var(--th-nord4)' }}>
+                                    I accept the <button onClick={() => setFooterModal('privacy')} className="underline hover:text-white">brutally honest privacy policy</button>. I understand this app stores my progress on Google Firebase.
+                                </p>
+                            </div>
+
                             {/* ── GitHub Login Button (PRIMARY) ───────── */}
                             <button
                                 onClick={handleGithubLogin}
-                                disabled={githubLoading}
+                                disabled={githubLoading || !acceptedPrivacy}
                                 className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-xl border border-white/10"
                                 style={{
-                                    background: githubLoading
+                                    background: (githubLoading || !acceptedPrivacy)
                                         ? 'var(--th-nord3)'
                                         : 'linear-gradient(135deg, #24292e 0%, #1b1f23 100%)',
-                                    color: '#ffffff',
-                                    cursor: githubLoading ? 'not-allowed' : 'pointer',
+                                    color: (githubLoading || !acceptedPrivacy) ? 'color-mix(in srgb, var(--th-nord4) 50%, transparent)' : '#ffffff',
+                                    cursor: (githubLoading || !acceptedPrivacy) ? 'not-allowed' : 'pointer',
+                                    opacity: !acceptedPrivacy ? 0.5 : 1
                                 }}
                             >
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'rgba(255,255,255,0.05)' }} />
@@ -593,12 +612,74 @@ export default function LoginPage() {
                         {footerModal === 'privacy' && (
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold flex items-center gap-2 text-red-400">
-                                    <ShieldCheck size={16} /> The Cold Truth
+                                    <ShieldCheck size={16} /> Privacy Policy — The Brutally Honest Version
                                 </h3>
-                                <div className="text-xs leading-relaxed opacity-70 space-y-3" style={{ color: 'var(--th-nord6)' }}>
-                                    <p>Let&apos;s be honest. I don&apos;t care about your privacy in the way lawyers want me to.</p>
-                                    <p>Your data is on Firebase. Is it safe? Google says yes. But in a world where even the God of War can be brought down, nothing is truly unhackable. I capture your solves, your notes, and your streaks to make this app work.</p>
-                                    <p>If you&apos;re worried about hackers finding out you couldn&apos;t solve &quot;Two Sum&quot; on your first try... well, maybe don&apos;t use the internet.</p>
+                                <div className="text-xs leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
+                                    <p className="italic opacity-50 mb-4">Last updated: whenever the developer remembers lawyers exist.</p>
+
+                                    <h4 className="font-bold text-white mt-4">1. The Cold Reality</h4>
+                                    <p>Yes, the app stores your data.</p>
+                                    <p>If it didn&apos;t store data, your streak would reset every time you refreshed the page and you&apos;d accuse the developer of crimes against humanity. So we store things. Mostly boring things.</p>
+
+                                    <h4 className="font-bold text-white mt-4">2. What We Actually Store</h4>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>your username or GitHub login</li>
+                                        <li>solved problems</li>
+                                        <li>streaks</li>
+                                        <li>notes you wrote at 3:17 AM while questioning your life choices</li>
+                                    </ul>
+                                    <p>That&apos;s it. There is no secret AI profiling system analyzing your personality because you failed <strong>Two Sum</strong>.</p>
+
+                                    <h4 className="font-bold text-white mt-4">3. Where It Lives</h4>
+                                    <p>Your data sits on <strong>Google Firebase</strong> servers.</p>
+                                    <p>Which means your DSA streak technically lives in the same cloud infrastructure that runs a significant portion of the modern internet. If Google goes down, the entire planet will have bigger problems than your dynamic programming notes.</p>
+
+                                    <h4 className="font-bold text-white mt-4">4. &quot;But What If It Gets Hacked???&quot;</h4>
+                                    <p>Everything on the internet <strong>can</strong> be hacked.</p>
+                                    <p>Large companies with billions of dollars have been breached before. Entire corporations with armies of security engineers have been breached. Banks have been breached. Governments have been breached.</p>
+                                    <p>Your DSA tracker probably isn&apos;t the grand prize hackers are chasing.</p>
+                                    <p>Imagine the criminal mastermind who finally breaks in and discovers:</p>
+                                    <pre className="bg-black/30 p-2 rounded-md font-mono text-[10px] my-2">
+                                        User: recursion_is_pain{'\n'}
+                                        Goal: learn graphs{'\n'}
+                                        Streak: 2 days{'\n'}
+                                        Notes: &quot;why does this even work&quot;
+                                    </pre>
+                                    <p>The cybercriminals would probably log out politely.</p>
+
+                                    <h4 className="font-bold text-white mt-4">5. The Value of Your Data</h4>
+                                    <p>Let&apos;s be honest. The internet is full of billion-dollar datasets. Ad profiles. Financial records. Corporate secrets.</p>
+                                    <p>Meanwhile this database contains:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>people trying to understand binary search</li>
+                                        <li>notes about sliding windows</li>
+                                        <li>emotional breakdowns caused by dynamic programming</li>
+                                    </ul>
+                                    <p>You are not the treasure vault. You are the algorithm practice notebook.</p>
+
+                                    <h4 className="font-bold text-white mt-4">6. What We Do With the Data</h4>
+                                    <p>We use your data to:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>remember solved problems</li>
+                                        <li>track streaks</li>
+                                        <li>sync progress across devices</li>
+                                        <li>stop you from losing a 27-day streak because your laptop died</li>
+                                    </ul>
+                                    <p>We do <strong>not</strong> sell your data. We do <strong>not</strong> run ads. We do <strong>not</strong> secretly train an AI model on your LeetCode trauma.</p>
+
+                                    <h4 className="font-bold text-white mt-4">7. Things This App Cannot Do</h4>
+                                    <p>This app cannot:</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>guarantee perfect security forever</li>
+                                        <li>solve DP for you</li>
+                                        <li>fix your procrastination</li>
+                                        <li>stop you from opening YouTube instead of practicing</li>
+                                    </ul>
+                                    <p>The app simply tracks progress. The rest is on you.</p>
+
+                                    <h4 className="font-bold text-white mt-4">8. Final Note</h4>
+                                    <p>If someone actually hacks this database and leaks your DSA progress to the world… the only real victim will be your <strong>unfinished graph problems</strong>. And honestly, we&apos;ve all been there.</p>
+                                    <p className="font-bold mt-4">Now go solve something.</p>
                                 </div>
                             </div>
                         )}
