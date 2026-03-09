@@ -274,6 +274,7 @@ export default function LoginPage() {
     const [userCount, setUserCount] = useState<number | null>(null);
     const [footerModal, setFooterModal] = useState<'about' | 'privacy' | 'github' | 'contact' | null>(null);
     const [showGithubProfile, setShowGithubProfile] = useState(false);
+    const [showGitCity, setShowGitCity] = useState(false);
     const { isLoggedIn, login, loginWithGithub } = useAppStore();
     const router = useRouter();
     const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -385,12 +386,23 @@ export default function LoginPage() {
                 {/* Hero */}
                 <div className="relative z-10 space-y-8">
                     <div>
-                        <h2 className="text-3xl font-extrabold leading-tight mb-5" style={{ color: 'var(--th-nord6)' }}>
+                        <h2 className="text-3xl font-extrabold leading-tight mb-4" style={{ color: 'var(--th-nord6)' }}>
                             Track your DSA journey and<br />
                             <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                 stay consistent until placement.
                             </span>
                         </h2>
+
+                        <div className="mb-6 p-4 rounded-xl border bg-white/[0.02] border-white/5 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+                            <p className="text-sm font-semibold opacity-80" style={{ color: 'var(--th-nord6)' }}>
+                                Most students quit DSA after 3 weeks.
+                            </p>
+                            <p className="text-sm font-semibold mt-1" style={{ color: 'var(--th-nord8)' }}>
+                                Track your progress so you don&apos;t.
+                            </p>
+                        </div>
+
                         {userCount && (
                             <div className="flex items-center gap-2 mb-5 bg-white/5 py-1 px-3.5 rounded-full w-fit border border-white/10">
                                 <Users size={11} className="text-[#84cc16]" />
@@ -422,9 +434,18 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Dev card at bottom */}
+                {/* Dev card & actions at bottom */}
                 <div className="relative z-10 flex flex-col gap-3">
-                    <DevCard />
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <DevCard />
+                        <button
+                            onClick={() => setShowGitCity(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all hover:scale-105 active:scale-95 shadow-lg bg-white text-gray-900 border-white hover:bg-gray-100"
+                        >
+                            <Github size={12} />
+                            Git City
+                        </button>
+                    </div>
                     <p className="text-[10px] opacity-20" style={{ color: 'var(--th-nord4)' }}>
                         SRCS Companion · Synced via Firebase
                     </p>
@@ -432,8 +453,12 @@ export default function LoginPage() {
             </div>
 
             {/* ── Right panel: form ─────────────────────────────────────────── */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-                <div className="w-full max-w-sm space-y-10">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 relative overflow-hidden">
+                {/* Subtle animated background shapes */}
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl animate-[pulse_8s_infinite_alternate]" />
+                <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/[0.015] rounded-full blur-3xl animate-[pulse_10s_infinite_alternate-reverse]" />
+
+                <div className="w-full max-w-sm space-y-10 relative z-10">
 
                     {/* Mobile logo */}
                     <div className="flex lg:hidden items-center justify-center gap-2 mb-2">
@@ -669,18 +694,18 @@ export default function LoginPage() {
                     <p className="text-center text-[10px] opacity-20" style={{ color: 'var(--th-nord4)' }}>
                         Synced securely via Firebase · Protected by your PIN
                     </p>
-                </div>
-            </div>
 
-            {/* ── Footer ─────────────────────────────────────────────────── */}
-            <div
-                className="absolute bottom-6 w-full flex justify-center gap-6 text-[10px] font-bold uppercase tracking-widest opacity-30"
-                style={{ color: 'var(--th-nord4)' }}
-            >
-                <button onClick={() => setFooterModal('about')} className="hover:opacity-100 transition-opacity">About</button>
-                <button onClick={() => setFooterModal('privacy')} className="hover:opacity-100 transition-opacity">Privacy</button>
-                <button onClick={() => setFooterModal('github')} className="hover:opacity-100 transition-opacity">GitHub</button>
-                <button onClick={() => setFooterModal('contact')} className="hover:opacity-100 transition-opacity">Contact</button>
+                    {/* ── Footer ─────────────────────────────────────────────────── */}
+                    <div
+                        className="flex justify-center gap-6 mt-12 text-xs font-bold uppercase tracking-widest opacity-40"
+                        style={{ color: 'var(--th-nord4)' }}
+                    >
+                        <button onClick={() => setFooterModal('about')} className="hover:opacity-100 transition-opacity">About</button>
+                        <button onClick={() => setFooterModal('privacy')} className="hover:opacity-100 transition-opacity">Privacy</button>
+                        <button onClick={() => setFooterModal('github')} className="hover:opacity-100 transition-opacity">GitHub</button>
+                        <button onClick={() => setFooterModal('contact')} className="hover:opacity-100 transition-opacity">Contact</button>
+                    </div>
+                </div>
             </div>
 
             {/* ── Footer Modals ─────────────────────────────────────────── */}
@@ -768,6 +793,48 @@ export default function LoginPage() {
                                 </a>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── Git City Island Modal ─────────────────────────────────────── */}
+            {showGitCity && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 lg:p-10 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full h-full max-w-[85vw] max-h-[85vh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
+                        {/* Header bar */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-900 rounded-lg text-white">
+                                    <Github size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-sm">The Git City</h3>
+                                    <p className="text-[10px] font-medium text-gray-500 max-w-md truncate">
+                                        A damn cool city based on GitHub repos and pushes. Built by <a href="https://x.com/samuelrizzondev" target="_blank" className="text-blue-600 hover:underline">@samuelrizzondev</a>
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowGitCity(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
+                            >
+                                <span className="font-bold">✕</span>
+                                <span className="text-lg font-bold leading-none -mt-0.5">×</span>
+                            </button>
+                        </div>
+
+                        {/* Iframe Content */}
+                        <div className="flex-1 bg-gray-100 relative">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                            </div>
+                            <iframe
+                                src="https://www.thegitcity.com/"
+                                className="w-full h-full border-none relative z-10"
+                                title="The Git City"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            />
+                        </div>
                     </div>
                 </div>
             )}
