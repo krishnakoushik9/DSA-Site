@@ -367,7 +367,7 @@ export default function LoginPage() {
 
             {/* ── Left panel: branding ───────────────────────────────────────── */}
             <div
-                className="hidden lg:flex flex-col justify-between w-[400px] shrink-0 p-10 relative overflow-hidden border-r"
+                className="hidden lg:flex flex-col justify-between w-[380px] shrink-0 p-8 relative overflow-hidden border-r"
                 style={{ borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}
             >
                 {/* ambient blobs */}
@@ -383,38 +383,38 @@ export default function LoginPage() {
                 </div>
 
                 {/* Hero */}
-                <div className="relative z-10 space-y-10">
+                <div className="relative z-10 space-y-8">
                     <div>
-                        <h2 className="text-4xl font-extrabold leading-tight mb-6" style={{ color: 'var(--th-nord6)' }}>
+                        <h2 className="text-3xl font-extrabold leading-tight mb-5" style={{ color: 'var(--th-nord6)' }}>
                             Track your DSA journey and<br />
                             <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                 stay consistent until placement.
                             </span>
                         </h2>
                         {userCount && (
-                            <div className="flex items-center gap-2 mb-6 bg-white/5 py-1.5 px-4 rounded-full w-fit border border-white/10">
-                                <Users size={12} className="text-[#84cc16]" />
+                            <div className="flex items-center gap-2 mb-5 bg-white/5 py-1 px-3.5 rounded-full w-fit border border-white/10">
+                                <Users size={11} className="text-[#84cc16]" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--th-nord4)' }}>
                                     Joined by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> placement aspirants
                                 </span>
                             </div>
                         )}
-                        <p className="text-base leading-relaxed opacity-60 max-w-[320px]" style={{ color: 'var(--th-nord4)' }}>
+                        <p className="text-sm leading-relaxed opacity-60 max-w-[300px]" style={{ color: 'var(--th-nord4)' }}>
                             Save your progress, build streaks, and solve 755+ curated questions to crack your dream job.
                         </p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {features.map((feat, i) => {
                             const Icon = feat.icon;
                             return (
-                                <div key={i} className="flex items-center gap-4 p-4 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
-                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
-                                        <Icon size={18} style={{ color: 'var(--th-nord8)' }} />
+                                <div key={i} className="flex items-center gap-3.5 p-3.5 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
+                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
+                                        <Icon size={16} style={{ color: 'var(--th-nord8)' }} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
-                                        <p className="text-xs opacity-50" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
+                                        <p className="text-[13px] font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
+                                        <p className="text-[11px] opacity-40" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
                                     </div>
                                 </div>
                             );
@@ -432,8 +432,8 @@ export default function LoginPage() {
             </div>
 
             {/* ── Right panel: form ─────────────────────────────────────────── */}
-            <div className="flex-1 flex items-center justify-center p-12 lg:p-20">
-                <div className="w-full max-w-md space-y-12">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
+                <div className="w-full max-w-sm space-y-10">
 
                     {/* Mobile logo */}
                     <div className="flex lg:hidden items-center justify-center gap-2 mb-2">
@@ -445,12 +445,12 @@ export default function LoginPage() {
 
                     {/* ── Step: Username ───────────────────────────────────── */}
                     {step === STEPS.USERNAME && (
-                        <div className="space-y-12">
+                        <div className="space-y-8">
                             <div>
-                                <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                                <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
                                     Sign in for Consistency
                                 </h1>
-                                <p className="text-base mt-3 opacity-60 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
+                                <p className="text-sm mt-2 opacity-50 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
                                     Sign in to save your DSA progress and streaks.
                                 </p>
                             </div>
@@ -459,7 +459,7 @@ export default function LoginPage() {
                             <button
                                 onClick={handleGithubLogin}
                                 disabled={githubLoading}
-                                className="w-full flex items-center justify-center gap-4 py-5 rounded-xl font-bold text-base transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl border border-white/10"
+                                className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl border border-white/10"
                                 style={{
                                     background: githubLoading
                                         ? 'var(--th-nord3)'
@@ -470,10 +470,10 @@ export default function LoginPage() {
                             >
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'rgba(255,255,255,0.05)' }} />
                                 {githubLoading ? (
-                                    <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
+                                    <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
                                 ) : (
                                     <>
-                                        <Github size={22} />
+                                        <Github size={20} />
                                         <span>Start with GitHub</span>
                                     </>
                                 )}
@@ -556,7 +556,7 @@ export default function LoginPage() {
                                 >
                                     <ChevronLeft size={14} /> Back
                                 </button>
-                                <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                                <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
                                     {isNewUser ? 'Create your PIN' : 'Enter your PIN'}
                                 </h1>
                                 <p className="text-sm mt-1 opacity-50" style={{ color: 'var(--th-nord4)' }}>
@@ -602,7 +602,7 @@ export default function LoginPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-wider mb-3 text-center opacity-50" style={{ color: 'var(--th-nord4)' }}>
                                     {isNewUser ? 'Choose a 4-digit PIN' : '4-digit PIN'}
                                 </label>
-                                <div className="flex justify-center gap-4">
+                                <div className="flex justify-center gap-3">
                                     {[0, 1, 2, 3].map(i => (
                                         <input
                                             key={i}
@@ -613,7 +613,7 @@ export default function LoginPage() {
                                             value={passcode[i]}
                                             onChange={(e) => handlePinChange(i, e.target.value)}
                                             onKeyDown={(e) => handlePinKeyDown(i, e)}
-                                            className="w-16 h-16 text-center text-2xl font-bold rounded-xl border-2 focus:outline-none transition-all duration-300 shadow-lg"
+                                            className="w-14 h-14 text-center text-xl font-bold rounded-xl border-2 focus:outline-none transition-all duration-300 shadow-lg"
                                             style={{
                                                 background: 'color-mix(in srgb, var(--th-nord1) 70%, transparent)',
                                                 color: 'var(--th-nord6)',
