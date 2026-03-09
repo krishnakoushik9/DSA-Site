@@ -79,7 +79,7 @@ function DevCard() {
                         boxShadow: '0 4px 24px rgba(163,230,53,0.3)',
                     }}
                 >
-                    enti shock ayyara! 😲
+                    System Alert
                     {/* Cloud tail */}
                     <div
                         className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0"
@@ -201,10 +201,10 @@ function DevCard() {
                                 Ankith Yellanathi
                             </button>
                             <p className="text-[10px] opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                Alias / AI Wrangler 🤖
+                                Alias / AI Wrangler
                             </p>
                             <p className="text-[9px] opacity-35 mt-0.5 italic" style={{ color: 'var(--th-nord4)' }}>
-                                Helped ship the cursed features.
+                                Helped ship the system features.
                             </p>
                         </div>
                     </div>
@@ -213,37 +213,10 @@ function DevCard() {
                         className="text-[9px] text-center opacity-25"
                         style={{ color: 'var(--th-nord4)' }}
                     >
-                        Made with love for CMR students ❤️
+                        Made with love for CMR students
                     </p>
                 </div>
             )}
-        </div>
-    );
-}
-
-/* ─── Heatmap Preview ───────────────────────────────────────────────────────── */
-function HeatmapPreview() {
-    return (
-        <div className="p-4 rounded-2xl border space-y-3" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}>
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Flame size={14} className="text-orange-500" />
-                    <span className="text-xs font-bold" style={{ color: 'var(--th-nord6)' }}>14 Day Streak</span>
-                </div>
-                <span className="text-[10px] opacity-40 font-mono" style={{ color: 'var(--th-nord4)' }}>42 solved</span>
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-                {[0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1].map((v, i) => (
-                    <div
-                        key={i}
-                        className="w-full aspect-square rounded-[2px]"
-                        style={{
-                            background: v === 1 ? 'var(--th-nord14)' : 'color-mix(in srgb, var(--th-nord3) 20%, transparent)',
-                            opacity: v === 1 ? 0.8 : 0.4
-                        }}
-                    />
-                ))}
-            </div>
         </div>
     );
 }
@@ -272,7 +245,7 @@ function PathfinderGame({ onFinish }: { onFinish: () => void }) {
                         key={i}
                         className={`w-full aspect-square rounded-sm border transition-all ${i === pos ? 'bg-[#84cc16] shadow-[0_0_10px_#84cc16]' : i === target ? 'bg-[#ef4444] animate-pulse' : 'bg-white/5 border-white/5'}`}
                     >
-                        {i === pos && <div className="w-full h-full flex items-center justify-center text-[10px]">📍</div>}
+                        {i === pos && <div className="w-full h-full flex items-center justify-center text-[10px] bg-[#000]/20 rounded-sm">P</div>}
                     </div>
                 ))}
             </div>
@@ -410,45 +383,43 @@ export default function LoginPage() {
                 </div>
 
                 {/* Hero */}
-                <div className="relative z-10 space-y-6">
+                <div className="relative z-10 space-y-10">
                     <div>
-                        <h2 className="text-3xl font-extrabold leading-tight mb-2" style={{ color: 'var(--th-nord6)' }}>
+                        <h2 className="text-4xl font-extrabold leading-tight mb-6" style={{ color: 'var(--th-nord6)' }}>
                             Track your DSA journey and<br />
                             <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                 stay consistent until placement.
                             </span>
                         </h2>
                         {userCount && (
-                            <div className="flex items-center gap-2 mb-4 bg-white/5 py-1 px-3 rounded-full w-fit border border-white/5">
+                            <div className="flex items-center gap-2 mb-6 bg-white/5 py-1.5 px-4 rounded-full w-fit border border-white/10">
                                 <Users size={12} className="text-[#84cc16]" />
-                                <span className="text-[10px] font-bold" style={{ color: 'var(--th-nord4)' }}>
-                                    Used by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> students preparing for placements
+                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--th-nord4)' }}>
+                                    Joined by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> placement aspirants
                                 </span>
                             </div>
                         )}
-                        <p className="text-sm leading-relaxed opacity-50" style={{ color: 'var(--th-nord4)' }}>
+                        <p className="text-base leading-relaxed opacity-60 max-w-[320px]" style={{ color: 'var(--th-nord4)' }}>
                             Save your progress, build streaks, and solve 755+ curated questions to crack your dream job.
                         </p>
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-4">
                         {features.map((feat, i) => {
                             const Icon = feat.icon;
                             return (
-                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
-                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
-                                        <Icon size={15} style={{ color: 'var(--th-nord8)' }} />
+                                <div key={i} className="flex items-center gap-4 p-4 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
+                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
+                                        <Icon size={18} style={{ color: 'var(--th-nord8)' }} />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-semibold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
-                                        <p className="text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
+                                        <p className="text-sm font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
+                                        <p className="text-xs opacity-50" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
-
-                    <HeatmapPreview />
                 </div>
 
                 {/* Dev card at bottom */}
@@ -461,8 +432,8 @@ export default function LoginPage() {
             </div>
 
             {/* ── Right panel: form ─────────────────────────────────────────── */}
-            <div className="flex-1 flex items-center justify-center p-6">
-                <div className="w-full max-w-sm space-y-6">
+            <div className="flex-1 flex items-center justify-center p-12 lg:p-20">
+                <div className="w-full max-w-md space-y-12">
 
                     {/* Mobile logo */}
                     <div className="flex lg:hidden items-center justify-center gap-2 mb-2">
@@ -474,12 +445,12 @@ export default function LoginPage() {
 
                     {/* ── Step: Username ───────────────────────────────────── */}
                     {step === STEPS.USERNAME && (
-                        <div className="space-y-5">
+                        <div className="space-y-12">
                             <div>
-                                <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
-                                    Sign in for Consistency 🚀
+                                <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                                    Sign in for Consistency
                                 </h1>
-                                <p className="text-sm mt-1 opacity-50" style={{ color: 'var(--th-nord4)' }}>
+                                <p className="text-base mt-3 opacity-60 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
                                     Sign in to save your DSA progress and streaks.
                                 </p>
                             </div>
@@ -488,33 +459,31 @@ export default function LoginPage() {
                             <button
                                 onClick={handleGithubLogin}
                                 disabled={githubLoading}
-                                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl"
+                                className="w-full flex items-center justify-center gap-4 py-5 rounded-xl font-bold text-base transition-all active:scale-[0.98] relative overflow-hidden group shadow-2xl border border-white/10"
                                 style={{
                                     background: githubLoading
-                                        ? 'color-mix(in srgb, var(--th-nord3) 20%, transparent)'
-                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 50%, #24292e 100%)',
-                                    color: githubLoading ? 'color-mix(in srgb, var(--th-nord4) 40%, transparent)' : '#ffffff',
-                                    border: '1px solid color-mix(in srgb, var(--th-nord3) 30%, transparent)',
+                                        ? 'var(--th-nord3)'
+                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 100%)',
+                                    color: '#ffffff',
                                     cursor: githubLoading ? 'not-allowed' : 'pointer',
                                 }}
                             >
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(135deg, rgba(88,166,255,0.15) 0%, rgba(163,230,53,0.1) 100%)' }} />
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'rgba(255,255,255,0.05)' }} />
                                 {githubLoading ? (
-                                    <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
+                                    <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
                                 ) : (
                                     <>
-                                        <Github size={20} />
+                                        <Github size={22} />
                                         <span>Start with GitHub</span>
-                                        <Sparkles size={14} className="ml-1 text-[#84cc16]" />
                                     </>
                                 )}
                             </button>
 
                             {/* ── Divider ────────────────────────────── */}
-                            <div className="flex items-center gap-3 py-2">
-                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
-                                <span className="text-[10px] font-medium uppercase tracking-wider opacity-30" style={{ color: 'var(--th-nord4)' }}>or create a username</span>
-                                <div className="flex-1 h-px" style={{ background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)' }} />
+                            <div className="flex items-center gap-4 py-2">
+                                <div className="flex-1 h-px bg-white/5" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-20" style={{ color: 'var(--th-nord4)' }}>or use username</span>
+                                <div className="flex-1 h-px bg-white/5" />
                             </div>
 
                             {/* Username field */}
@@ -587,8 +556,8 @@ export default function LoginPage() {
                                 >
                                     <ChevronLeft size={14} /> Back
                                 </button>
-                                <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
-                                    {isNewUser ? 'Create your PIN 🔐' : 'Enter your PIN 🔑'}
+                                <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                                    {isNewUser ? 'Create your PIN' : 'Enter your PIN'}
                                 </h1>
                                 <p className="text-sm mt-1 opacity-50" style={{ color: 'var(--th-nord4)' }}>
                                     Signing in as <span className="font-semibold opacity-100" style={{ color: 'var(--th-nord8)' }}>@{username}</span>
@@ -633,7 +602,7 @@ export default function LoginPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-wider mb-3 text-center opacity-50" style={{ color: 'var(--th-nord4)' }}>
                                     {isNewUser ? 'Choose a 4-digit PIN' : '4-digit PIN'}
                                 </label>
-                                <div className="flex justify-center gap-3">
+                                <div className="flex justify-center gap-4">
                                     {[0, 1, 2, 3].map(i => (
                                         <input
                                             key={i}
@@ -644,7 +613,7 @@ export default function LoginPage() {
                                             value={passcode[i]}
                                             onChange={(e) => handlePinChange(i, e.target.value)}
                                             onKeyDown={(e) => handlePinKeyDown(i, e)}
-                                            className="w-14 h-14 text-center text-xl font-bold rounded-xl border-2 focus:outline-none transition-all duration-200"
+                                            className="w-16 h-16 text-center text-2xl font-bold rounded-xl border-2 focus:outline-none transition-all duration-300 shadow-lg"
                                             style={{
                                                 background: 'color-mix(in srgb, var(--th-nord1) 70%, transparent)',
                                                 color: 'var(--th-nord6)',
@@ -732,9 +701,8 @@ export default function LoginPage() {
                                     <Info size={16} /> Why the Alias?
                                 </h3>
                                 <div className="text-xs leading-relaxed opacity-70 space-y-3" style={{ color: 'var(--th-nord6)' }}>
-                                    <p>Ankith Yellanathi isn&apos;t just a name. It&apos;s a tribute to a developer who was once a king, then a ghost, now an AI Wrangler.</p>
-                                    <p>&quot;Tell me... do you bleed code?&quot; asked the AI. The developer just looked at the terminal. It was like the Titanic — beautiful, massive, but hit an iceberg of technical debt. Like Kratos, he burned his past to forge this tool for you.</p>
-                                    <p>He uses an alias because the real man died in the great server crash of 2024. This version is just... code. Pure, cold, efficient code.</p>
+                                    <p>Ankith Yellanathi is a tribute to a developer who was once a king, then a ghost, now an AI Wrangler.</p>
+                                    <p>He uses an alias because the real man died in the great server crash of 2024. This version is just code. Pure, cold, efficient code.</p>
                                 </div>
                             </div>
                         )}
