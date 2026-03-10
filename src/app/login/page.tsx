@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-
-const DancingGirl3DLazy = dynamic(() => import('@/components/DancingGirl3D'), { ssr: false });
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import {
     Zap,
     ArrowRight,
@@ -26,14 +23,21 @@ import {
     Users,
     Flame,
     ShieldCheck,
-    Gamepad2,
     ExternalLink,
     Mail,
     Search,
+    BarChart3,
+    Calendar,
+    Award,
+    Briefcase,
+    CheckCircle,
+    MousePointer2,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { getUserCount } from '@/lib/firebase';
-import { format } from 'date-fns';
+
+const DancingGirl3DLazy = dynamic(() => import('@/components/DancingGirl3D'), { ssr: false });
 
 const STEPS = {
     USERNAME: 'username',
@@ -41,61 +45,234 @@ const STEPS = {
 } as const;
 type Step = typeof STEPS[keyof typeof STEPS];
 
-const features = [
-    { icon: Brain, label: '755+ Questions', desc: 'FINAL450 + Fraz sheets' },
-    { icon: Target, label: 'Smart Study Path', desc: 'Arrays → Graphs → DP flow' },
-    { icon: Flame, label: 'Streaks & Ratings', desc: 'Daily DSA streak tracking' },
-    { icon: BookOpen, label: 'Workspace', desc: 'Notes + whiteboard' },
+const productSteps = [
+    {
+        icon: Brain,
+        title: 'Solve',
+        desc: 'Solve curated DSA questions organized by topic. No random practice. Just structured progression.',
+        color: 'var(--th-nord8)',
+    },
+    {
+        icon: Target,
+        title: 'Track',
+        desc: 'Your streaks, ratings, and topic completion are automatically tracked.',
+        color: 'var(--th-nord9)',
+    },
+    {
+        icon: BarChart3,
+        title: 'Improve',
+        desc: 'See exactly where you are weak and what to practice next.',
+        color: 'var(--th-nord14)',
+    },
 ];
 
-const usernameRules = [
-    'Use letters, numbers, underscores or hyphens',
-    'Min 5 characters, max 20 characters',
-    'No random words — use a real, identifiable name',
-    'Same username = same progress on any device',
+const featureHighlights = [
+    { icon: Code2, label: '750+ Curated Problems' },
+    { icon: Target, label: 'Topic-based Study Path' },
+    { icon: Flame, label: 'Daily Streak Tracking' },
+    { icon: Calendar, label: 'Calendar Planning' },
+    { icon: Award, label: 'Automated Exams' },
+    { icon: Briefcase, label: 'Company Prep Mode' },
 ];
 
-/* ─── Pathfinder Game ───────────────────────────────────────────────────────── */
-function PathfinderGame({ onFinish }: { onFinish: () => void }) {
-    const [grid, setGrid] = useState<number[]>(new Array(49).fill(0));
-    const [pos, setPos] = useState(0);
-    const target = 48;
+/* ── Flappy Bird Game Identity Gate ─────────────────────────────────────────── */
+function FlappyBirdGame({ onSuccess }: { onSuccess: () => void }) {
+    const [gameState, setGameState] = useState<'idle' | 'playing' | 'gameover'>('idle');
+    const [score, setScore] = useState(0);
+    const [birdY, setBirdY] = useState(150);
+    const [birdVelocity, setBirdVelocity] = useState(0);
+    const [pipes, setPipes] = useState<{ x: number; topHeight: number }[]>([]);
+    const gameRef = useRef<HTMLDivElement>(null);
+    const animationRef = useRef<number | null>(null);
 
-    const move = (targetPos: number) => {
-        if (targetPos < 0 || targetPos >= 49) return;
-        setPos(targetPos);
-        if (targetPos === target) onFinish();
+    const GRAVITY = 0.18;
+    const JUMP_STRENGTH = -4.2;
+    const PIPE_SPEED = 1.8;
+    const PIPE_SPACING = 220;
+    const PIPE_WIDTH = 52;
+    const BIRD_SIZE = 24;
+    const GROUND_Y = 360;
+    const GAME_WIDTH = 320;
+    const PIPE_GAP = 140;
+
+    const jump = () => {
+        if (gameState === 'idle') {
+            setGameState('playing');
+            setBirdVelocity(JUMP_STRENGTH);
+        } else if (gameState === 'playing') {
+            setBirdVelocity(JUMP_STRENGTH);
+        } else if (gameState === 'gameover') {
+            resetGame();
+        }
     };
 
+    const resetGame = () => {
+        setBirdY(150);
+        setBirdVelocity(0);
+        setScore(0);
+        setPipes([]);
+        setGameState('playing');
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState]);
+
+    useEffect(() => {
+        if (gameState !== 'playing') return;
+
+        const loop = () => {
+            setBirdY((y) => {
+                const nextY = y + birdVelocity;
+                // Collision with floor or ceiling
+                if (nextY < 0 || nextY > GROUND_Y - BIRD_SIZE) {
+                    setGameState('gameover');
+                    return y;
+                }
+                return nextY;
+            });
+            setBirdVelocity((v) => v + GRAVITY);
+
+            setPipes((prev) => {
+                let next = prev.map((p) => ({ ...p, x: p.x - PIPE_SPEED }));
+
+                // Add new pipe
+                if (next.length === 0 || next[next.length - 1].x < GAME_WIDTH - PIPE_SPACING) {
+                    next.push({
+                        x: GAME_WIDTH,
+                        topHeight: Math.random() * (GROUND_Y - PIPE_GAP - 100) + 50,
+                    });
+                }
+
+                // Remove old pipe
+                if (next[0].x < -PIPE_WIDTH) {
+                    next.shift();
+                    setScore((s) => {
+                        const newScore = s + 1;
+                        if (newScore >= 10) {
+                            setTimeout(onSuccess, 500);
+                        }
+                        return newScore;
+                    });
+                }
+
+                // Collision Detection
+                const birdX = 50;
+                const birdRect = { left: birdX, right: birdX + BIRD_SIZE, top: birdY, bottom: birdY + BIRD_SIZE };
+
+                for (const p of next) {
+                    if (birdX + BIRD_SIZE > p.x && birdX < p.x + PIPE_WIDTH) {
+                        if (birdY < p.topHeight || birdY + BIRD_SIZE > p.topHeight + PIPE_GAP) {
+                            setGameState('gameover');
+                        }
+                    }
+                }
+
+                return next;
+            });
+
+            animationRef.current = requestAnimationFrame(loop);
+        };
+
+        animationRef.current = requestAnimationFrame(loop);
+        return () => {
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        };
+    }, [gameState, birdVelocity, birdY, onSuccess]);
+
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#84cc16]">Solve to see profile</p>
-                <p className="text-[10px] opacity-40">Get to the bottom-right!</p>
+        <div
+            ref={gameRef}
+            onClick={jump}
+            className="relative w-[320px] h-[400px] mx-auto rounded-2xl overflow-hidden cursor-pointer select-none border-4 border-nord3 shadow-inner bg-nord0"
+            style={{ backgroundColor: 'var(--th-nord0)' }}
+        >
+            {/* Background elements */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <div className="absolute bottom-0 w-full h-1/4 bg-nord8" />
+                <div className="absolute bottom-1/4 w-full h-1/2 bg-nord9" />
             </div>
-            <div className="grid grid-cols-7 gap-1 bg-[#1a202c] p-2 rounded-xl border border-white/5">
-                {new Array(49).fill(0).map((_, i) => (
+
+            {/* Pipes */}
+            {pipes.map((p, i) => (
+                <React.Fragment key={i}>
+                    {/* Top Pipe */}
                     <div
-                        key={i}
-                        className={`w-full aspect-square rounded-sm border transition-all ${i === pos ? 'bg-[#84cc16] shadow-[0_0_10px_#84cc16]' : i === target ? 'bg-[#ef4444] animate-pulse' : 'bg-white/5 border-white/5'}`}
-                    >
-                        {i === pos && <div className="w-full h-full flex items-center justify-center text-[10px] bg-[#000]/20 rounded-sm">P</div>}
+                        className="absolute bg-nord14 border-x-4 border-b-4 border-nord3 rounded-b-lg"
+                        style={{ left: p.x, top: 0, width: PIPE_WIDTH, height: p.topHeight }}
+                    />
+                    {/* Bottom Pipe */}
+                    <div
+                        className="absolute bg-nord14 border-x-4 border-t-4 border-nord3 rounded-t-lg"
+                        style={{ left: p.x, top: p.topHeight + PIPE_GAP, width: PIPE_WIDTH, height: GROUND_Y - (p.topHeight + PIPE_GAP) }}
+                    />
+                </React.Fragment>
+            ))}
+
+            {/* Ground */}
+            <div className="absolute bottom-0 w-full h-[40px] bg-nord3 z-20" />
+
+            {/* Bird */}
+            <motion.div
+                animate={{ rotate: birdVelocity * 5 }}
+                className="absolute left-[50px] w-[30px] h-[30px] rounded-full bg-nord15 border-2 border-nord5 flex items-center justify-center shadow-lg z-30"
+                style={{ top: birdY, width: BIRD_SIZE, height: BIRD_SIZE }}
+            >
+                <div className="w-1.5 h-1.5 bg-nord0 rounded-full ml-1 md-0.5" />
+            </motion.div>
+
+            {/* UI Overlay */}
+            <div className="absolute top-8 left-0 w-full text-center z-40 pointer-events-none">
+                <p className="text-4xl font-black text-nord5 drop-shadow-[0_2px_0_rgba(0,0,0,0.5)]">{score}</p>
+                <p className="text-[10px] font-bold text-nord8 uppercase tracking-widest mt-1">Score 10 to reveal dev</p>
+            </div>
+
+            {gameState === 'idle' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-nord0/60 z-50 backdrop-blur-[2px]">
+                    <div className="animate-bounce mb-4">
+                        <MousePointer2 size={48} className="text-nord8" />
                     </div>
-                ))}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-                <div />
-                <button onClick={() => move(pos - 7)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">↑</button>
-                <div />
-                <button onClick={() => move(pos - 1)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">←</button>
-                <button onClick={() => move(pos + 7)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">↓</button>
-                <button onClick={() => move(pos + 1)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">→</button>
-            </div>
+                    <p className="text-xl font-bold text-nord6">Click to Jump</p>
+                    <p className="text-sm opacity-60 text-nord4 mt-2">Space works too</p>
+                </div>
+            )}
+
+            {gameState === 'gameover' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-nord11/20 z-50 backdrop-blur-sm animate-in fade-in zoom-in">
+                    <h3 className="text-2xl font-black text-nord11 mb-2">CRASHED!</h3>
+                    <p className="text-sm font-bold text-nord6 mb-6">Score: {score}</p>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); resetGame(); }}
+                        className="px-6 py-2 rounded-full bg-nord8 text-nord0 font-bold hover:scale-105 transition-transform shadow-lg"
+                    >
+                        Try Again
+                    </button>
+                    {score >= 10 && <p className="text-xs text-nord14 font-bold mt-4">Unlocking Identity...</p>}
+                </div>
+            )}
+
+            {/* Success Animation */}
+            {score >= 10 && (
+                <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1.5, opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none"
+                >
+                    <div className="w-40 h-40 bg-nord14 rounded-full blur-3xl opacity-50" />
+                    <Sparkles size={64} className="text-nord14 absolute" />
+                </motion.div>
+            )}
         </div>
     );
 }
 
-/* ─── Main Page ─────────────────────────────────────────────────────────────── */
 export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [passcode, setPasscode] = useState(['', '', '', '']);
@@ -107,9 +284,9 @@ export default function LoginPage() {
     const [githubLoading, setGithubLoading] = useState(false);
     const [userCount, setUserCount] = useState<number | null>(null);
     const [footerModal, setFooterModal] = useState<'about' | 'privacy' | 'github' | 'contact' | null>(null);
-    const [showGithubProfile, setShowGithubProfile] = useState(false);
-    const [showGitCity, setShowGitCity] = useState(false);
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+    const [score, setScore] = useState(0);
+
     const { isLoggedIn, login, loginWithGithub } = useAppStore();
     const router = useRouter();
     const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -118,14 +295,21 @@ export default function LoginPage() {
         setMounted(true);
         getUserCount().then(setUserCount);
     }, []);
+
     useEffect(() => {
         if (mounted && isLoggedIn) router.push('/dashboard');
     }, [mounted, isLoggedIn, router]);
 
     const handleUsernameNext = () => {
         const trimmed = username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-        if (!trimmed || trimmed.length < 5) { setError('Username must be at least 5 characters (letters, numbers, - or _). No random words.'); return; }
-        if (trimmed.length > 20) { setError('Username cannot exceed 20 characters'); return; }
+        if (!trimmed || trimmed.length < 5) {
+            setError('Username must be at least 5 characters.');
+            return;
+        }
+        if (trimmed.length > 20) {
+            setError('Username cannot exceed 20 characters.');
+            return;
+        }
         setUsername(trimmed);
         setError('');
         setStep(STEPS.PASSCODE);
@@ -144,11 +328,17 @@ export default function LoginPage() {
 
     const handlePinKeyDown = (index: number, e: React.KeyboardEvent) => {
         if (e.key === 'Backspace' && !passcode[index] && index > 0) pinRefs.current[index - 1]?.focus();
-        if (e.key === 'Enter') { const pin = passcode.join(''); if (pin.length === 4) handleLogin(pin); }
+        if (e.key === 'Enter') {
+            const pin = passcode.join('');
+            if (pin.length === 4) handleLogin(pin);
+        }
     };
 
     const handleLogin = async (pin: string) => {
-        if (pin.length !== 4) { setError('Please enter all 4 digits'); return; }
+        if (pin.length !== 4) {
+            setError('Please enter all 4 digits');
+            return;
+        }
         setLoading(true);
         setError('');
         try {
@@ -169,14 +359,8 @@ export default function LoginPage() {
         }
     };
 
-    const handleBack = () => {
-        setStep(STEPS.USERNAME);
-        setPasscode(['', '', '', '']);
-        setError('');
-        setIsNewUser(false);
-    };
-
     const handleGithubLogin = async () => {
+        if (!acceptedPrivacy) return;
         setGithubLoading(true);
         setError('');
         try {
@@ -196,587 +380,435 @@ export default function LoginPage() {
     if (!mounted || isLoggedIn) return null;
 
     return (
-        <div
-            className="min-h-screen flex items-stretch overflow-hidden"
-            style={{ backgroundColor: 'var(--th-nord0)' }}
-        >
+        <div className="min-h-screen relative flex flex-col items-center overflow-x-hidden transition-colors" style={{ backgroundColor: 'var(--th-nord0)' }}>
 
-            {/* ── Left panel: branding ───────────────────────────────────────── */}
-            <div
-                className="hidden lg:flex flex-col justify-between w-[340px] shrink-0 p-8 relative overflow-hidden border-r"
-                style={{ borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}
-            >
-                {/* ambient blobs */}
-                <div className="absolute top-0 left-0 w-72 h-72 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" style={{ background: 'color-mix(in srgb, var(--th-nord8) 8%, transparent)' }} />
-                <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] translate-x-1/3 -translate-y-1/3" style={{ background: 'color-mix(in srgb, var(--th-nord15) 5%, transparent)' }} />
+            {/* ── Background Elements ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-20" style={{ background: 'var(--th-nord8)' }} />
+                <div className="absolute bottom-[10%] right-[-10%] w-[35%] h-[35%] rounded-full blur-[140px] opacity-10" style={{ background: 'var(--th-nord15)' }} />
+            </div>
 
-                {/* Logo */}
-                <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
-                        <Zap size={16} style={{ color: 'var(--th-nord0)' }} />
+            {/* ── Phase 1: Top Nav ── */}
+            <nav className="w-full max-w-[1200px] flex items-center justify-between p-6 lg:p-8 relative z-20">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
+                        <Zap size={20} style={{ color: 'var(--th-nord0)' }} />
                     </div>
-                    <span className="font-bold text-base tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
+                    <span className="font-bold text-xl tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
                 </div>
+                <div className="hidden sm:flex items-center gap-6">
+                    <button onClick={() => setFooterModal('privacy')} className="text-sm font-medium opacity-60 hover:opacity-100 transition-opacity" style={{ color: 'var(--th-nord4)' }}>Privacy</button>
+                    <button onClick={() => setFooterModal('github')} className="text-sm font-medium opacity-60 hover:opacity-100 transition-opacity" style={{ color: 'var(--th-nord4)' }}>Developer</button>
+                </div>
+            </nav>
 
-                {/* Hero */}
-                <div className="relative z-10 space-y-6">
-                    <div>
-                        <h2 className="text-[26px] font-extrabold leading-[1.15] mb-4" style={{ color: 'var(--th-nord6)' }}>
-                            Track your DSA journey and<br />
-                            <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                stay consistent.
+            {/* ── Phase 2: Hero Section ── */}
+            <main className="w-full max-w-[1200px] flex flex-col items-center px-6 lg:px-10 py-12 lg:py-20 relative z-10 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="space-y-6 mb-16"
+                >
+                    <h1 className="text-4xl md:text-6xl lg:text-[64px] font-[800] leading-[1.1] tracking-tight" style={{ color: 'var(--th-nord6)' }}>
+                        Track your DSA journey.<br />
+                        Build consistency.<br />
+                        <span style={{ background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            Crack placements.
+                        </span>
+                    </h1>
+                    <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed opacity-80" style={{ color: 'var(--th-nord4)' }}>
+                        A structured system to solve 750+ curated problems, track streaks, and build real interview readiness.
+                    </p>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="flex flex-wrap items-center justify-center gap-4 pt-4"
+                    >
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                            <Users size={16} className="text-nord8" />
+                            <span className="text-sm font-bold" style={{ color: 'var(--th-nord4)' }}>
+                                Join <span className="text-nord8">{userCount?.toLocaleString() || '1500+'}</span> aspirants tracking their prep.
                             </span>
-                        </h2>
-
-                        <div className="mb-4 p-3 rounded-xl border bg-white/[0.02] border-white/5 relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
-                            <p className="text-[12px] font-medium opacity-80" style={{ color: 'var(--th-nord6)' }}>
-                                Most quit DSA after 3 weeks.
-                            </p>
-                            <p className="text-[12px] font-medium mt-0.5" style={{ color: 'var(--th-nord8)' }}>
-                                Track progress so you don&apos;t.
-                            </p>
                         </div>
+                    </motion.div>
+                </motion.div>
 
-                        {userCount && (
-                            <div className="flex items-center gap-2 mb-4 bg-white/5 py-1 px-3 rounded-full w-fit border border-white/10">
-                                <Users size={10} className="text-[#84cc16]" />
-                                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--th-nord4)' }}>
-                                    Joined by <span className="text-[#84cc16]">{userCount.toLocaleString()}</span> aspirants
-                                </span>
-                            </div>
-                        )}
-                        <p className="text-[12px] leading-relaxed opacity-60 max-w-[280px]" style={{ color: 'var(--th-nord4)' }}>
-                            Save your progress, build streaks, and solve curated questions to crack your dream job.
-                        </p>
-                    </div>
+                {/* ── Phase 3: Visual Product Walkthrough ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mb-24 relative">
+                    {/* Connection lines (desktop only) */}
+                    <div className="hidden md:block absolute top-[40px] left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-nord3/40 to-transparent" />
 
-                    <div className="space-y-2.5">
-                        {features.map((feat, i) => {
-                            const Icon = feat.icon;
-                            return (
-                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border transition-colors hover:bg-white/[0.02]" style={{ background: 'color-mix(in srgb, var(--th-nord1) 50%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 12%, transparent)' }}>
-                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--th-nord8) 12%, transparent)' }}>
-                                        <Icon size={14} style={{ color: 'var(--th-nord8)' }} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[12px] font-bold" style={{ color: 'var(--th-nord5)' }}>{feat.label}</p>
-                                        <p className="text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>{feat.desc}</p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Actions at bottom */}
-                <div className="relative z-10 flex flex-col gap-2.5">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowGitCity(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border-2 transition-all hover:scale-105 active:scale-95 shadow-lg bg-white text-gray-900 border-white hover:bg-gray-100"
+                    {productSteps.map((s, i) => (
+                        <motion.div
+                            key={s.title}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6 + i * 0.2 }}
+                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl hover:bg-white/[0.05] transition-all group relative"
                         >
-                            <Github size={12} />
-                            Git City
-                        </button>
-                    </div>
-                    <p className="text-[10px] opacity-20" style={{ color: 'var(--th-nord4)' }}>
-                        SRCS Companion · Synced via Firebase
-                    </p>
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"
+                                style={{ background: `color-mix(in srgb, ${s.color} 15%, transparent)`, color: s.color }}>
+                                <s.icon size={28} />
+                            </div>
+                            <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--th-nord5)' }}>{s.title}</h3>
+                            <p className="text-sm leading-relaxed opacity-60" style={{ color: 'var(--th-nord4)' }}>{s.desc}</p>
+                        </motion.div>
+                    ))}
                 </div>
-            </div>
 
-            {/* ── Right panel: form ─────────────────────────────────────────── */}
-            <div className="flex-1 flex items-center justify-center p-6 lg:p-10 relative overflow-hidden">
-                {/* Subtle animated background shapes */}
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/[0.02] rounded-full blur-3xl animate-[pulse_8s_infinite_alternate]" />
-                <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/[0.015] rounded-full blur-3xl animate-[pulse_10s_infinite_alternate-reverse]" />
+                {/* ── Phase 5, 6: Login Panel & How it Works ── */}
+                <div id="login-section" className="w-full max-w-[1000px] grid grid-cols-1 lg:grid-cols-2 gap-16 items-start py-20">
 
-                <div className="w-full max-w-[340px] space-y-8 relative z-10">
+                    {/* How it Works / Social Proof */}
+                    <div className="text-left space-y-12">
+                        <section className="space-y-6">
+                            <h2 className="text-3xl font-bold" style={{ color: 'var(--th-nord6)' }}>How it works</h2>
+                            <div className="space-y-4 relative pl-8">
+                                {/* Flow line */}
+                                <div className="absolute left-[11px] top-2 bottom-2 w-px bg-nord3" />
 
-                    {/* Mobile logo */}
-                    <div className="flex lg:hidden items-center justify-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--th-nord8), var(--th-nord10))' }}>
-                            <Zap size={16} style={{ color: 'var(--th-nord0)' }} />
-                        </div>
-                        <span className="font-bold text-base tracking-tight" style={{ color: 'var(--th-nord5)' }}>DSA Tracker</span>
-                    </div>
-
-                    {/* ── Step: Username ───────────────────────────────────── */}
-                    {step === STEPS.USERNAME && (
-                        <div className="space-y-6">
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
-                                    Sign in for Consistency
-                                </h1>
-                                <p className="text-[13px] mt-1.5 opacity-50 leading-relaxed" style={{ color: 'var(--th-nord4)' }}>
-                                    Sign in to save your DSA progress and streaks.
-                                </p>
-                            </div>
-
-                            {/* ── Privacy Checkbox ───────── */}
-                            <div className="flex items-start gap-3 mt-4">
-                                <button
-                                    onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                                    className="w-5 h-5 rounded border border-white/20 flex items-center justify-center shrink-0 mt-0.5 transition-colors"
-                                    style={{
-                                        background: acceptedPrivacy ? '#84cc16' : 'rgba(255,255,255,0.05)',
-                                        borderColor: acceptedPrivacy ? '#84cc16' : 'rgba(255,255,255,0.2)'
-                                    }}
-                                >
-                                    {acceptedPrivacy && <CheckCircle2 size={12} className="text-gray-900" />}
-                                </button>
-                                <p className="text-[11px] leading-relaxed opacity-60" style={{ color: 'var(--th-nord4)' }}>
-                                    I accept the <button onClick={() => setFooterModal('privacy')} className="underline hover:text-white">brutally honest privacy policy</button>. I understand this app stores my progress on Google Firebase.
-                                </p>
-                            </div>
-
-                            {/* ── GitHub Login Button (PRIMARY) ───────── */}
-                            <button
-                                onClick={handleGithubLogin}
-                                disabled={githubLoading || !acceptedPrivacy}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] relative overflow-hidden group shadow-xl border border-white/10"
-                                style={{
-                                    background: (githubLoading || !acceptedPrivacy)
-                                        ? 'var(--th-nord3)'
-                                        : 'linear-gradient(135deg, #24292e 0%, #1b1f23 100%)',
-                                    color: (githubLoading || !acceptedPrivacy) ? 'color-mix(in srgb, var(--th-nord4) 50%, transparent)' : '#ffffff',
-                                    cursor: (githubLoading || !acceptedPrivacy) ? 'not-allowed' : 'pointer',
-                                    opacity: !acceptedPrivacy ? 0.5 : 1
-                                }}
-                            >
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'rgba(255,255,255,0.05)' }} />
-                                {githubLoading ? (
-                                    <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.2)', borderTopColor: '#fff' }} />
-                                ) : (
-                                    <>
-                                        <Github size={20} />
-                                        <span>Start with GitHub</span>
-                                    </>
-                                )}
-                            </button>
-
-                            {/* ── Divider ────────────────────────────── */}
-                            <div className="flex items-center gap-4 py-2">
-                                <div className="flex-1 h-px bg-white/5" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest opacity-20" style={{ color: 'var(--th-nord4)' }}>or use username</span>
-                                <div className="flex-1 h-px bg-white/5" />
-                            </div>
-
-                            {/* Username field */}
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider mb-2 opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                    Username
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm select-none opacity-30" style={{ color: 'var(--th-nord4)' }}>@</span>
-                                    <input
-                                        type="text"
-                                        value={username}
-                                        onChange={(e) => { setUsername(e.target.value); setError(''); }}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleUsernameNext()}
-                                        placeholder="your_name"
-                                        maxLength={20}
-                                        className="w-full pl-9 pr-10 py-3.5 rounded-xl text-sm font-medium border focus:outline-none focus:ring-2 transition-all shadow-inner"
-                                        style={{
-                                            background: 'color-mix(in srgb, var(--th-nord1) 70%, transparent)',
-                                            borderColor: 'color-mix(in srgb, var(--th-nord3) 25%, transparent)',
-                                            color: 'var(--th-nord5)',
-                                        }}
-                                        autoComplete="username"
-                                    />
-                                    {username.trim().length >= 5 && (
-                                        <User size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                    )}
-                                </div>
-                                {error && (
-                                    <p className="text-[11px] mt-2 flex items-center gap-1" style={{ color: 'var(--th-nord11)' }}>
-                                        ⚠ {error}
-                                    </p>
-                                )}
-                            </div>
-
-                            <button
-                                onClick={handleUsernameNext}
-                                disabled={!username.trim()}
-                                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]"
-                                style={!username.trim()
-                                    ? { background: 'color-mix(in srgb, var(--th-nord3) 10%, transparent)', color: 'opacity-20', cursor: 'not-allowed' }
-                                    : { background: 'var(--th-nord3)', color: 'var(--th-nord6)', border: '1px solid var(--th-nord4)' }
-                                }
-                            >
-                                <span>Continue</span>
-                                <ArrowRight size={16} />
-                            </button>
-
-                            <div className="flex flex-col items-center gap-2 pt-2">
-                                <div className="flex items-center gap-2 text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>
-                                    <ShieldCheck size={12} className="text-[#84cc16]" />
-                                    <span>Secure login via Firebase Auth</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] opacity-40" style={{ color: 'var(--th-nord4)' }}>
-                                    <Lock size={12} />
-                                    <span>Your progress is securely synced across devices</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── Step: Passcode ───────────────────────────────────── */}
-                    {step === STEPS.PASSCODE && (
-                        <div className="space-y-5">
-                            <div>
-                                <button
-                                    onClick={handleBack}
-                                    className="flex items-center gap-1.5 text-xs mb-4 -ml-1 opacity-40 hover:opacity-70 transition-opacity"
-                                    style={{ color: 'var(--th-nord4)' }}
-                                >
-                                    <ChevronLeft size={14} /> Back
-                                </button>
-                                <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--th-nord6)' }}>
-                                    {isNewUser ? 'Create your PIN' : 'Enter your PIN'}
-                                </h1>
-                                <p className="text-sm mt-1 opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                    Signing in as <span className="font-semibold opacity-100" style={{ color: 'var(--th-nord8)' }}>@{username}</span>
-                                </p>
-                            </div>
-
-                            {/* PIN instructions */}
-                            <div className="rounded-xl p-4 space-y-2 border" style={{ background: 'color-mix(in srgb, var(--th-nord1) 60%, transparent)', borderColor: 'color-mix(in srgb, var(--th-nord3) 15%, transparent)' }}>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Lock size={12} style={{ color: 'var(--th-nord9)' }} />
-                                    <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--th-nord9)' }}>
-                                        {isNewUser ? 'Setting up your PIN' : 'About your PIN'}
-                                    </span>
-                                </div>
-                                {isNewUser ? (
-                                    <>
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 size={11} className="mt-0.5 shrink-0 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                            <p className="text-[11px] leading-snug opacity-60" style={{ color: 'var(--th-nord4)' }}>First time here — choose a 4-digit PIN you&apos;ll remember.</p>
+                                {[
+                                    { text: 'Pick Topic', color: 'var(--th-nord8)' },
+                                    { text: 'Solve Problems', color: 'var(--th-nord9)' },
+                                    { text: 'Track Progress', color: 'var(--th-nord10)' },
+                                    { text: 'Build Streak', color: 'var(--th-nord14)' },
+                                    { text: 'Crack Interviews', color: 'var(--th-nord12)' },
+                                ].map((step, i) => (
+                                    <div key={i} className="flex items-center gap-4 group">
+                                        <div className="w-6 h-6 rounded-full border-2 border-nord3 bg-nord0 flex items-center justify-center z-10 group-hover:border-nord8 transition-colors">
+                                            <div className="w-2 h-2 rounded-full bg-nord8 scale-0 group-hover:scale-100 transition-transform" />
                                         </div>
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 size={11} className="mt-0.5 shrink-0 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                            <p className="text-[11px] leading-snug opacity-60" style={{ color: 'var(--th-nord4)' }}>This PIN protects your data — it cannot be recovered if lost.</p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 size={11} className="mt-0.5 shrink-0 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                            <p className="text-[11px] leading-snug opacity-60" style={{ color: 'var(--th-nord4)' }}>Enter the same 4-digit PIN you set when you signed up.</p>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 size={11} className="mt-0.5 shrink-0 opacity-60" style={{ color: 'var(--th-nord14)' }} />
-                                            <p className="text-[11px] leading-snug opacity-60" style={{ color: 'var(--th-nord4)' }}>Wrong username? Hit Back to change it.</p>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* PIN inputs */}
-                            <div>
-                                <label className="block text-[11px] font-semibold uppercase tracking-wider mb-3 text-center opacity-50" style={{ color: 'var(--th-nord4)' }}>
-                                    {isNewUser ? 'Choose a 4-digit PIN' : '4-digit PIN'}
-                                </label>
-                                <div className="flex justify-center gap-3">
-                                    {[0, 1, 2, 3].map(i => (
-                                        <input
-                                            key={i}
-                                            ref={el => { pinRefs.current[i] = el; }}
-                                            type="password"
-                                            inputMode="numeric"
-                                            maxLength={1}
-                                            value={passcode[i]}
-                                            onChange={(e) => handlePinChange(i, e.target.value)}
-                                            onKeyDown={(e) => handlePinKeyDown(i, e)}
-                                            className="w-14 h-14 text-center text-xl font-bold rounded-xl border-2 focus:outline-none transition-all duration-300 shadow-lg"
-                                            style={{
-                                                background: 'color-mix(in srgb, var(--th-nord1) 70%, transparent)',
-                                                color: 'var(--th-nord6)',
-                                                borderColor: passcode[i]
-                                                    ? 'color-mix(in srgb, var(--th-nord8) 60%, transparent)'
-                                                    : 'color-mix(in srgb, var(--th-nord3) 25%, transparent)',
-                                                boxShadow: passcode[i] ? '0 0 12px color-mix(in srgb, var(--th-nord8) 18%, transparent)' : 'none',
-                                            }}
-                                            disabled={loading}
-                                        />
-                                    ))}
-                                </div>
-                                {error && (
-                                    <p className="text-[11px] mt-3 text-center flex items-center justify-center gap-1" style={{ color: 'var(--th-nord11)' }}>
-                                        ⚠ {error}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex gap-2.5">
-                                <button
-                                    onClick={handleBack}
-                                    className="px-4 py-3 rounded-xl text-xs font-semibold border transition-all hover:opacity-80"
-                                    style={{
-                                        color: 'color-mix(in srgb, var(--th-nord4) 50%, transparent)',
-                                        borderColor: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)',
-                                    }}
-                                >
-                                    Back
-                                </button>
-                                <button
-                                    onClick={() => handleLogin(passcode.join(''))}
-                                    disabled={loading || passcode.join('').length !== 4}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]"
-                                    style={loading || passcode.join('').length !== 4
-                                        ? { background: 'color-mix(in srgb, var(--th-nord3) 20%, transparent)', color: 'color-mix(in srgb, var(--th-nord4) 25%, transparent)', cursor: 'not-allowed' }
-                                        : { background: 'linear-gradient(90deg, var(--th-nord8), var(--th-nord9))', color: 'var(--th-nord0)' }
-                                    }
-                                >
-                                    {loading ? (
-                                        <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'color-mix(in srgb, var(--th-nord0) 30%, transparent)', borderTopColor: 'var(--th-nord0)' }} />
-                                    ) : (
-                                        <>
-                                            <KeyRound size={14} />
-                                            <span>{isNewUser ? 'Create Account' : 'Sign In'}</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <p className="text-center text-[10px] opacity-20" style={{ color: 'var(--th-nord4)' }}>
-                        Synced securely via Firebase · Protected by your PIN
-                    </p>
-
-                    {/* ── Footer ─────────────────────────────────────────────────── */}
-                    <div
-                        className="flex justify-center gap-6 mt-12 text-xs font-bold uppercase tracking-widest opacity-40"
-                        style={{ color: 'var(--th-nord4)' }}
-                    >
-                        <button onClick={() => setFooterModal('about')} className="hover:opacity-100 transition-opacity">About</button>
-                        <button onClick={() => setFooterModal('privacy')} className="hover:opacity-100 transition-opacity">Privacy</button>
-                        <button onClick={() => setFooterModal('github')} className="hover:opacity-100 transition-opacity">GitHub</button>
-                        <button onClick={() => setFooterModal('contact')} className="hover:opacity-100 transition-opacity">Contact</button>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Footer Modals ─────────────────────────────────────────── */}
-            {footerModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-                    <div
-                        className="w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-2xl relative"
-                        style={{ background: 'var(--th-nord0)', borderColor: 'var(--th-nord3)' }}
-                    >
-                        <button
-                            onClick={() => { setFooterModal(null); setShowGithubProfile(false); }}
-                            className="absolute top-4 right-4 text-xs opacity-40 hover:opacity-100"
-                        >✕</button>
-
-                        {footerModal === 'about' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--th-nord8)' }}>
-                                    <Info size={16} /> Why the Alias?
-                                </h3>
-                                <div className="text-xs leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
-                                    <p>The developer goes by <strong>Ankith Yellanathi</strong> — though historians, philosophers, and a few confused database logs claim he has existed since the <strong>age of the Buddha</strong>.</p>
-                                    <p>Legend says he was once a wandering student who tried to master logic under a Bodhi tree, only to discover that enlightenment is easier than debugging asynchronous code.</p>
-                                    <p>Over the centuries he held many roles: monk, mathematician, wandering storyteller, part-time cook of suspiciously experimental noodles, and occasionally, a developer.</p>
-                                    <p>His identity became… complicated.</p>
-                                    <p>At one point he fell into a tragic love story involving a poet, a misplaced Git repository, and a German Shepherd named <strong>Compiler</strong> who judged every commit silently. The relationship ended during what historians now call <strong>The Great Merge Conflict</strong>.</p>
-                                    <p>After the breakup, Ankith swore never to trust romance again — only <strong>clean code and deterministic algorithms</strong>.</p>
-                                    <hr className="border-white/10 my-4" />
-                                    <p>Things escalated.</p>
-                                    <p>At some unclear point in the 1800s he allegedly entered a <strong>racing competition against a group of extremely angry bulls</strong>, which he claims taught him two important lessons:</p>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>never run production code without testing</li>
-                                        <li>never race animals that weigh more than your entire tech stack</li>
-                                    </ul>
-                                    <hr className="border-white/10 my-4" />
-                                    <p>There are also records of Ankith participating in a strange contest known as <strong>The Titanic Regatta</strong>, where developers attempted to optimize boat steering algorithms while the ship slowly headed toward an iceberg.</p>
-                                    <p>His algorithm worked perfectly. The iceberg, however, did not respect version control.</p>
-                                    <hr className="border-white/10 my-4" />
-                                    <p>Later myths say he accidentally wandered into a <strong>war between gods</strong>.</p>
-                                    <p>Zeus demanded lightning-fast computation.<br />Odin wanted distributed systems.<br />Shiva simply asked if the servers could survive destruction cycles.</p>
-                                    <p>Ankith responded the only way a developer could: He deployed a patch.</p>
-                                    <p>No one understood the code, but the universe kept running, so everyone agreed to leave it alone.</p>
-                                    <hr className="border-white/10 my-4" />
-                                    <p>Then came the <strong>Great Server Crash of 2024</strong>.</p>
-                                    <p>The real Ankith allegedly disappeared during a catastrophic incident involving a corrupted backup, twelve cups of coffee, and an experimental script named <code>final_final_really_final_v7.py</code>.</p>
-                                    <p>What remains today is uncertain. Some say it is just an alias. Some say it is a ghost in the machine. Others believe it is simply <strong>a student who has been learning for 2,500 years and still hasn&apos;t finished debugging life</strong>.</p>
-                                    <p>What we know for sure is this:<br />The developer behind this project is <strong>Ankith Yellanathi</strong>.</p>
-                                    <p>Possibly human.<br />Possibly code.<br />Definitely still fixing bugs.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {footerModal === 'privacy' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold flex items-center gap-2 text-red-400">
-                                    <ShieldCheck size={16} /> Privacy Policy — The Brutally Honest Version
-                                </h3>
-                                <div className="text-xs leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
-                                    <p className="italic opacity-50 mb-4">Last updated: whenever the developer remembers lawyers exist.</p>
-
-                                    <h4 className="font-bold text-white mt-4">1. The Cold Reality</h4>
-                                    <p>Yes, the app stores your data.</p>
-                                    <p>If it didn&apos;t store data, your streak would reset every time you refreshed the page and you&apos;d accuse the developer of crimes against humanity. So we store things. Mostly boring things.</p>
-
-                                    <h4 className="font-bold text-white mt-4">2. What We Actually Store</h4>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>your username or GitHub login</li>
-                                        <li>solved problems</li>
-                                        <li>streaks</li>
-                                        <li>notes you wrote at 3:17 AM while questioning your life choices</li>
-                                    </ul>
-                                    <p>That&apos;s it. There is no secret AI profiling system analyzing your personality because you failed <strong>Two Sum</strong>.</p>
-
-                                    <h4 className="font-bold text-white mt-4">3. Where It Lives</h4>
-                                    <p>Your data sits on <strong>Google Firebase</strong> servers.</p>
-                                    <p>Which means your DSA streak technically lives in the same cloud infrastructure that runs a significant portion of the modern internet. If Google goes down, the entire planet will have bigger problems than your dynamic programming notes.</p>
-
-                                    <h4 className="font-bold text-white mt-4">4. &quot;But What If It Gets Hacked???&quot;</h4>
-                                    <p>Everything on the internet <strong>can</strong> be hacked.</p>
-                                    <p>Large companies with billions of dollars have been breached before. Entire corporations with armies of security engineers have been breached. Banks have been breached. Governments have been breached.</p>
-                                    <p>Your DSA tracker probably isn&apos;t the grand prize hackers are chasing.</p>
-                                    <p>Imagine the criminal mastermind who finally breaks in and discovers:</p>
-                                    <pre className="bg-black/30 p-2 rounded-md font-mono text-[10px] my-2">
-                                        User: recursion_is_pain{'\n'}
-                                        Goal: learn graphs{'\n'}
-                                        Streak: 2 days{'\n'}
-                                        Notes: &quot;why does this even work&quot;
-                                    </pre>
-                                    <p>The cybercriminals would probably log out politely.</p>
-
-                                    <h4 className="font-bold text-white mt-4">5. The Value of Your Data</h4>
-                                    <p>Let&apos;s be honest. The internet is full of billion-dollar datasets. Ad profiles. Financial records. Corporate secrets.</p>
-                                    <p>Meanwhile this database contains:</p>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>people trying to understand binary search</li>
-                                        <li>notes about sliding windows</li>
-                                        <li>emotional breakdowns caused by dynamic programming</li>
-                                    </ul>
-                                    <p>You are not the treasure vault. You are the algorithm practice notebook.</p>
-
-                                    <h4 className="font-bold text-white mt-4">6. What We Do With the Data</h4>
-                                    <p>We use your data to:</p>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>remember solved problems</li>
-                                        <li>track streaks</li>
-                                        <li>sync progress across devices</li>
-                                        <li>stop you from losing a 27-day streak because your laptop died</li>
-                                    </ul>
-                                    <p>We do <strong>not</strong> sell your data. We do <strong>not</strong> run ads. We do <strong>not</strong> secretly train an AI model on your LeetCode trauma.</p>
-
-                                    <h4 className="font-bold text-white mt-4">7. Things This App Cannot Do</h4>
-                                    <p>This app cannot:</p>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        <li>guarantee perfect security forever</li>
-                                        <li>solve DP for you</li>
-                                        <li>fix your procrastination</li>
-                                        <li>stop you from opening YouTube instead of practicing</li>
-                                    </ul>
-                                    <p>The app simply tracks progress. The rest is on you.</p>
-
-                                    <h4 className="font-bold text-white mt-4">8. Final Note</h4>
-                                    <p>If someone actually hacks this database and leaks your DSA progress to the world… the only real victim will be your <strong>unfinished graph problems</strong>. And honestly, we&apos;ve all been there.</p>
-                                    <p className="font-bold mt-4">Now go solve something.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {footerModal === 'github' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--th-nord14)' }}>
-                                    <Gamepad2 size={16} /> The Developer&apos;s Lair
-                                </h3>
-                                {showGithubProfile ? (
-                                    <div className="flex flex-col items-center gap-4 p-4 rounded-xl bg-white/5 border border-[#84cc16]/20">
-                                        <Image
-                                            src="https://avatars.slack-edge.com/2025-05-14/8891273522918_30c38bf627ac73075db6_512.png"
-                                            alt="Profile"
-                                            width={80}
-                                            height={80}
-                                            className="rounded-full ring-4 ring-[#84cc16]"
-                                            unoptimized
-                                        />
-                                        <div className="text-center">
-                                            <h4 className="text-sm font-bold">krishnakoushik9</h4>
-                                            <p className="text-[10px] opacity-50">Builder, Sufferer, Leader</p>
-                                        </div>
-                                        <a
-                                            href="https://github.com/krishnakoushik9"
-                                            target="_blank"
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#84cc16] text-[#0f172a] text-[10px] font-bold"
-                                        >
-                                            View Github <ExternalLink size={12} />
-                                        </a>
+                                        <span className="text-base font-medium opacity-60 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--th-nord4)' }}>
+                                            {step.text}
+                                        </span>
                                     </div>
-                                ) : (
-                                    <PathfinderGame onFinish={() => setShowGithubProfile(true)} />
-                                )}
+                                ))}
                             </div>
-                        )}
+                        </section>
 
-                        {footerModal === 'contact' && (
-                            <div className="space-y-4 text-center">
-                                <h3 className="text-sm font-bold flex items-center justify-center gap-2" style={{ color: 'var(--th-nord15)' }}>
-                                    <Mail size={16} /> Signal the Bat
-                                </h3>
-                                <p className="text-xs opacity-60">Wanna reach out? I might be in Gotham.</p>
-                                <a
-                                    href="https://www.instagram.com/thebatman/"
-                                    target="_blank"
-                                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-xs shadow-lg"
-                                >
-                                    DM on Instagram <ExternalLink size={14} />
-                                </a>
-                            </div>
-                        )}
+                        <div className="p-6 rounded-2xl bg-nord8/5 border border-nord8/10">
+                            <p className="text-nord8 text-sm font-medium leading-relaxed italic">
+                                &quot;Used by students preparing for FAANG and top level startups. The structure makes all the difference.&quot;
+                            </p>
+                        </div>
                     </div>
-                </div>
-            )}
 
-            {/* ── Git City Island Modal ─────────────────────────────────────── */}
-            {showGitCity && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 lg:p-10 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="w-full h-full max-w-[85vw] max-h-[85vh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col relative animate-in zoom-in-95 duration-300">
-                        {/* Header bar */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gray-900 rounded-lg text-white">
-                                    <Github size={18} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-sm">The Git City</h3>
-                                    <p className="text-[10px] font-medium text-gray-500 max-w-md truncate">
-                                        A damn cool city based on GitHub repos and pushes. Built by <a href="https://x.com/samuelrizzondev" target="_blank" className="text-blue-600 hover:underline">@samuelrizzondev</a>
-                                    </p>
-                                </div>
+                    {/* Phase 5: Login Card */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="rounded-[40px] p-10 md:p-14 md:px-16 relative"
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.06)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+                            backdropFilter: 'blur(24px)'
+                        }}
+                    >
+                        <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-nord8/10 blur-xl animate-pulse" />
+
+                        <div className="space-y-8">
+                            <div className="text-center">
+                                <h1 className="text-2xl font-bold" style={{ color: 'var(--th-nord6)' }}>Continue your DSA journey</h1>
+                                <p className="text-sm mt-2 opacity-50" style={{ color: 'var(--th-nord4)' }}>Start Tracking Your Progress</p>
                             </div>
-                            <button
-                                onClick={() => setShowGitCity(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
-                            >
-                                <span className="font-bold">✕</span>
-                                <span className="text-lg font-bold leading-none -mt-0.5">×</span>
-                            </button>
+
+                            {step === STEPS.USERNAME && (
+                                <div className="space-y-6">
+                                    {/* Privacy */}
+                                    <div className="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
+                                        <button
+                                            onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
+                                            className="w-5 h-5 rounded border mt-0.5 flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+                                            style={{ borderColor: acceptedPrivacy ? 'var(--th-nord14)' : 'var(--th-nord3)' }}
+                                        >
+                                            {acceptedPrivacy && <CheckCircle size={14} className="text-nord14" />}
+                                        </button>
+                                        <p className="text-[11px] leading-relaxed opacity-60 text-left" style={{ color: 'var(--th-nord4)' }}>
+                                            I accept the <button onClick={() => setFooterModal('privacy')} className="underline hover:text-white">privacy policy</button>. I understand my progress is synced securely.
+                                        </p>
+                                    </div>
+
+                                    {/* Github */}
+                                    <button
+                                        onClick={handleGithubLogin}
+                                        disabled={githubLoading || !acceptedPrivacy}
+                                        className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-sm transition-all hover:scale-[1.03] active:scale-[0.98] shadow-xl group border border-white/10"
+                                        style={{
+                                            background: !acceptedPrivacy ? 'var(--th-nord3)' : 'linear-gradient(135deg, #24292e 0%, #1b1f23 100%)',
+                                            opacity: !acceptedPrivacy ? 0.5 : 1,
+                                            cursor: !acceptedPrivacy ? 'not-allowed' : 'pointer',
+                                            color: '#fff'
+                                        }}
+                                    >
+                                        {githubLoading ? (
+                                            <div className="w-5 h-5 border-2 rounded-full animate-spin border-white/20 border-t-white" />
+                                        ) : (
+                                            <>
+                                                <Github size={20} />
+                                                <span>Sign in with GitHub to sync</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1 h-px bg-white/5" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-20" style={{ color: 'var(--th-nord4)' }}>or</span>
+                                        <div className="flex-1 h-px bg-white/5" />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" />
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleUsernameNext()}
+                                                placeholder="Enter username"
+                                                className="w-full pl-12 pr-4 py-4 rounded-xl text-sm bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-nord8/50 transition-all font-medium"
+                                                style={{ color: 'var(--th-nord5)' }}
+                                            />
+                                        </div>
+                                        {error && <p className="text-[11px] text-nord11 text-center">⚠ {error}</p>}
+                                        <button
+                                            onClick={handleUsernameNext}
+                                            disabled={!username.trim()}
+                                            className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl font-black text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-2xl shadow-nord8/30 group/btn"
+                                            style={{ background: 'var(--th-nord8)', color: 'var(--th-nord0)' }}
+                                        >
+                                            <span className="group-hover/btn:translate-x-[-2px] transition-transform">Start tracking progress</span>
+                                            <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === STEPS.PASSCODE && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <button onClick={() => setStep(STEPS.USERNAME)} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 opacity-60">
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <div className="text-left">
+                                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-40">Account found</p>
+                                            <p className="text-sm font-bold" style={{ color: 'var(--th-nord8)' }}>@{username}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center gap-3">
+                                        {[0, 1, 2, 3].map(i => (
+                                            <input
+                                                key={i}
+                                                ref={el => { pinRefs.current[i] = el; }}
+                                                type="password"
+                                                inputMode="numeric"
+                                                maxLength={1}
+                                                value={passcode[i]}
+                                                onChange={(e) => handlePinChange(i, e.target.value)}
+                                                onKeyDown={(e) => handlePinKeyDown(i, e)}
+                                                className="w-14 h-14 text-center text-xl font-bold rounded-xl border-2 focus:outline-none transition-all bg-white/5"
+                                                style={{
+                                                    borderColor: passcode[i] ? 'var(--th-nord8)' : 'var(--th-nord3)',
+                                                    color: 'var(--th-nord6)'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    {error && <p className="text-[11px] text-nord11 text-center font-medium">⚠ {error}</p>}
+                                    <button
+                                        onClick={() => handleLogin(passcode.join(''))}
+                                        disabled={loading || passcode.join('').length !== 4}
+                                        className="w-full py-4 rounded-xl bg-nord8 text-nord0 font-bold text-sm hover:bg-nord9 hover:scale-[1.03] transition-all disabled:opacity-30"
+                                    >
+                                        {loading ? <div className="w-5 h-5 border-2 rounded-full animate-spin border-nord0/20 border-t-nord0 mx-auto" /> : (isNewUser ? 'Create Account' : 'Start Solving')}
+                                    </button>
+                                </div>
+                            )}
+
+                            <p className="text-center text-[10px] opacity-40 uppercase tracking-widest pt-4" style={{ color: 'var(--th-nord4)' }}>
+                                Your progress syncs securely across devices.
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* ── Phase 4: Product Preview ── */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1.2, duration: 1 }}
+                    className="w-full max-w-5xl mb-32 relative group border-t border-white/5 pt-24"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-nord8/20 to-transparent blur-3xl opacity-20" />
+                    <div className="relative rounded-[32px] overflow-hidden border border-white/10 shadow-2xl bg-nord1/50 backdrop-blur-sm aspect-[16/9] flex flex-col group">
+                        {/* Browser Header Mock */}
+                        <div className="h-10 border-b border-white/10 flex items-center px-4 gap-2 bg-nord0/40 z-20">
+                            {[1, 2, 3].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full bg-white/20" />)}
                         </div>
 
-                        {/* Iframe Content */}
-                        <div className="flex-1 bg-gray-100 relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                            </div>
-                            <iframe
-                                src="https://www.thegitcity.com/"
-                                className="w-full h-full border-none relative z-10"
-                                title="The Git City"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        {/* Real Dashboard Image (Blurred) */}
+                        <div className="absolute inset-0 pt-10 blur-[8px] group-hover:blur-[4px] transition-all duration-700 select-none grayscale group-hover:grayscale-0 pointer-events-none">
+                            <img
+                                src="/images/dashboard-preview.png"
+                                alt="Dashboard Preview"
+                                className="w-full h-full object-cover"
+                                draggable="false"
                             />
                         </div>
+
+                        {/* Text Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-nord0/40 backdrop-blur-[1px] z-10 pointer-events-none">
+                            <div className="text-center p-8">
+                                <h3 className="text-2xl font-bold mb-2 drop-shadow-lg" style={{ color: 'var(--th-nord6)' }}>Know exactly where you stand.</h3>
+                                <p className="text-sm opacity-80 drop-shadow-md" style={{ color: 'var(--th-nord4)' }}>No guessing your preparation level.</p>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* ── Phase 8: Feature Highlights ── */}
+                <div className="w-full max-w-5xl py-24">
+                    <h2 className="text-xl font-bold opacity-30 uppercase tracking-[.25em] text-center mb-12">System Features</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {featureHighlights.map((f, i) => (
+                            <motion.div
+                                key={i}
+                                whileHover={{ y: -5 }}
+                                className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center gap-3 text-center"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-nord3/40 flex items-center justify-center" style={{ color: 'var(--th-nord8)' }}>
+                                    <f.icon size={16} />
+                                </div>
+                                <span className="text-[11px] font-bold leading-tight" style={{ color: 'var(--th-nord5)' }}>{f.label}</span>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
-            )}
+            </main>
+
+            {/* ── Phase 13: Trust Signals ── */}
+            <footer className="w-full border-t border-white/5 mt-auto bg-nord0/50 backdrop-blur-md">
+                <div className="max-w-[1200px] mx-auto p-12 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 justify-center md:justify-start">
+                            <Zap size={16} className="text-nord8" />
+                            <span className="font-bold text-nord6">DSA Tracker</span>
+                        </div>
+                        <p className="text-xs opacity-50" style={{ color: 'var(--th-nord4)' }}>© 2026 Structured Progress for Aspirants</p>
+                    </div>
+
+                    <div className="flex gap-8 text-[11px] font-bold uppercase tracking-widest opacity-40">
+                        <button onClick={() => setFooterModal('about')} className="hover:opacity-100 hover:text-nord8 transition-all">About</button>
+                        <button onClick={() => setFooterModal('privacy')} className="hover:opacity-100 hover:text-nord8 transition-all">Privacy</button>
+                        <button onClick={() => setFooterModal('github')} className="hover:opacity-100 hover:text-nord8 transition-all">GitHub</button>
+                        <button onClick={() => setFooterModal('contact')} className="hover:opacity-100 hover:text-nord8 transition-all">Contact</button>
+                    </div>
+                </div>
+            </footer>
+
+            {/* ── Modals (Keep Existing) ── */}
+            <AnimatePresence>
+                {footerModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="w-full max-w-md rounded-[32px] border p-8 space-y-4 shadow-2xl relative"
+                            style={{ background: 'var(--th-nord0)', borderColor: 'var(--th-nord3)' }}
+                        >
+                            <button
+                                onClick={() => setFooterModal(null)}
+                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/5 transition-colors opacity-40 hover:opacity-100"
+                            >✕</button>
+
+                            {footerModal === 'about' && (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--th-nord8)' }}>
+                                        <Info size={20} /> About The Project
+                                    </h3>
+                                    <div className="text-sm leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
+                                        <p>This tool was built to solve the &quot;random practice&quot; problem. Most students solve high volumes of questions but lack a structured sequence or tracking mechanism.</p>
+                                        <p>By blending verified sheets, streak tracking, and automated exams, we create a high-integrity environment for preparation.</p>
+                                        <hr className="border-white/10 my-4" />
+                                        <p className="font-bold text-nord8">Built by Ankith Yellanathi</p>
+                                        <p>Engineering consistency since the dawn of binary search.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {footerModal === 'privacy' && (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold flex items-center gap-2 text-nord11">
+                                        <ShieldCheck size={20} /> Privacy Policy
+                                    </h3>
+                                    <div className="text-sm leading-relaxed opacity-70 space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" style={{ color: 'var(--th-nord6)' }}>
+                                        <p><strong>1. Data Storage:</strong> We store your progress (solved questions, streaks, notes) on Google Firebase.</p>
+                                        <p><strong>2. Authentication:</strong> Your PIN is hashed. We don&apos;t store plain-text passwords.</p>
+                                        <p><strong>3. Transparency:</strong> We don&apos;t sell data. We don&apos;t run ads. This is a tool for students.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {footerModal === 'github' && (
+                                <div className="space-y-6 text-center">
+                                    <h3 className="text-xl font-bold flex items-center justify-center gap-2" style={{ color: 'var(--th-nord8)' }}>
+                                        <Github size={24} /> The Developer&apos;s Lair
+                                    </h3>
+
+                                    {score >= 10 ? (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="space-y-6"
+                                        >
+                                            <div className="w-24 h-24 bg-gradient-to-br from-nord8 to-nord9 rounded-full mx-auto flex items-center justify-center text-nord0 shadow-xl shadow-nord8/20 border-4 border-white/10 ring-4 ring-nord8/20">
+                                                <Github size={48} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h4 className="text-2xl font-black text-nord6">krishnakoushik9</h4>
+                                                <p className="text-sm opacity-60 text-nord4 font-medium">Building tools for developers.</p>
+                                            </div>
+                                            <div className="pt-4 flex flex-col gap-3">
+                                                <a href="https://github.com/krishnakoushik9" target="_blank" className="flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-nord8 text-nord0 font-black text-sm hover:scale-[1.05] active:scale-95 transition-all shadow-lg shadow-nord8/20">
+                                                    GitHub Profile <ExternalLink size={16} />
+                                                </a>
+                                                <p className="text-[10px] uppercase font-bold tracking-[.2em] opacity-30">Identity Unlocked</p>
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <div className="py-4">
+                                            <FlappyBirdGame onSuccess={() => setScore(10)} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {footerModal === 'contact' && (
+                                <div className="space-y-4 text-center">
+                                    <div className="w-16 h-16 bg-nord15/20 rounded-2xl mx-auto flex items-center justify-center text-nord15 mb-4">
+                                        <Mail size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold">Get in Touch</h3>
+                                    <p className="text-sm opacity-60">Feedback or issues? DM me.</p>
+                                    <a href="https://www.instagram.com/thebatman/" target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold text-sm">
+                                        Instagram <ExternalLink size={14} />
+                                    </a>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <DancingGirl3DLazy mode="login" />
         </div>

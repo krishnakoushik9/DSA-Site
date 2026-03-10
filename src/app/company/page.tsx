@@ -18,7 +18,7 @@ interface CompanyQuestion {
 }
 
 export default function CompanyModePage() {
-    const { completedQuestions, toggleQuestionComplete, setSidebarCollapsed, setPremiumPopupOpen } = useAppStore();
+    const { completedQuestions, toggleQuestionComplete, setPremiumPopupOpen } = useAppStore();
     const [pageLoading, setPageLoading] = useState(true);
     const [companies, setCompanies] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -31,16 +31,13 @@ export default function CompanyModePage() {
     const [questionSearch, setQuestionSearch] = useState('');
 
     useEffect(() => {
-        // Auto collapse sidebar
-        setSidebarCollapsed(true);
-
         // Show premium popup
         setPremiumPopupOpen(true);
 
         // Pulsating loading effect for 2 seconds
         const timer = setTimeout(() => setPageLoading(false), 2000);
         return () => clearTimeout(timer);
-    }, [setSidebarCollapsed, setPremiumPopupOpen]);
+    }, [setPremiumPopupOpen]);
 
     useEffect(() => {
         if (pageLoading) return; // Don't fetch while intro loading

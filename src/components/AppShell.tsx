@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
-import Sidebar from '@/components/Sidebar';
+import FloatingDock from '@/components/navigation/FloatingDock';
 import SyncIndicator from '@/components/SyncIndicator';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { isLoggedIn, isSidebarCollapsed } = useAppStore();
+    const { isLoggedIn } = useAppStore();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -82,9 +82,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthGuard>
-            <div className="flex min-h-screen overflow-hidden">
-                <Sidebar />
-                <main className={`flex-1 transition-all duration-300 relative min-w-0 overflow-hidden ${isSidebarCollapsed ? 'ml-[72px]' : 'ml-[72px] md:ml-[260px]'}`}>
+            <div className="flex min-h-screen relative overflow-hidden">
+                <main className="flex-1 w-full transition-all duration-300 relative min-w-0 overflow-hidden pb-[120px]">
                     <div className="absolute top-2 right-2 lg:right-4 z-50">
                         <ThemeToggle />
                     </div>
@@ -97,6 +96,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </div>
                 </main>
                 <PomodoroWidget />
+                <FloatingDock />
             </div>
             <PremiumPopup />
             <LearnAIPopup />

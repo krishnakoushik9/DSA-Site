@@ -46,6 +46,7 @@ interface AppState extends UserProgress {
     login: (username: string, passcode: string) => Promise<{ success: boolean; error?: string; isNew?: boolean }>;
     loginWithGithub: () => Promise<{ success: boolean; error?: string; isNew?: boolean }>;
     logout: () => void;
+    deleteAccount: () => Promise<void>;
 
     // Data actions
     toggleQuestionComplete: (questionId: string) => void;
@@ -361,6 +362,20 @@ export const useAppStore = create<AppState>()(
                     syncStatus: 'idle',
                     _cloudReady: false,
                 });
+            },
+
+            deleteAccount: async () => {
+                const state = get();
+                if (!state.isLoggedIn || !state.username) return;
+
+                // Sync current data but with an invalid passcode hash, permanently locking the account
+                const dataToSync = buildSyncData(state);
+                const invalidHash = 'LOCKED_DELETED_ACCOUNT_' + Date.now();
+
+                await saveToFirestore(state.username, dataToSync, invalidHash);
+
+                // Perform local logout
+                state.logout();
             },
 
             // =============== UI ACTIONS ===============

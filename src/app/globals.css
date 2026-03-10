@@ -23,6 +23,12 @@
   --th-nord13: #EBCB8B;
   --th-nord14: #A3BE8C;
   --th-nord15: #B48EAD;
+
+  --dock-bg: rgba(30, 31, 34, 0.85);
+  --dock-hover: rgba(255, 255, 255, 0.08);
+  --dock-active: var(--th-nord8);
+  --dock-icon: var(--th-nord4);
+  --dock-text: var(--th-nord6);
 }
 
 [data-theme="light"] {
@@ -42,6 +48,12 @@
   --th-nord13: #D97706;
   --th-nord14: #16A34A;
   --th-nord15: #9333EA;
+
+  --dock-bg: rgba(255, 255, 255, 0.9);
+  --dock-hover: rgba(0, 0, 0, 0.06);
+  --dock-active: var(--th-nord8);
+  --dock-icon: var(--th-nord4);
+  --dock-text: var(--th-nord6);
 }
 
 [data-theme="slate-lime"] {
@@ -61,6 +73,12 @@
   --th-nord13: #F59E0B;
   --th-nord14: #22C55E;
   --th-nord15: #8B5CF6;
+
+  --dock-bg: rgba(15, 23, 42, 0.85);
+  --dock-hover: rgba(255, 255, 255, 0.08);
+  --dock-active: var(--th-nord8);
+  --dock-icon: var(--th-nord4);
+  --dock-text: var(--th-nord6);
 }
 
 [data-theme="amoled"] {
@@ -80,6 +98,12 @@
   --th-nord13: #EAB308;
   --th-nord14: #22C55E;
   --th-nord15: #D946EF;
+
+  --dock-bg: rgba(0, 0, 0, 0.85);
+  --dock-hover: rgba(255, 255, 255, 0.12);
+  --dock-active: var(--th-nord8);
+  --dock-icon: var(--th-nord4);
+  --dock-text: var(--th-nord6);
 }
 
 /* ============================================================

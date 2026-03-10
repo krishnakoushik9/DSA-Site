@@ -17,7 +17,12 @@ import {
     Target,
     Edit3,
     Check,
+    AlertTriangle,
+    LogOut,
+    Trash2,
+    X,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { getAllQuestions, getTopicProgress, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
 import ProgressRing from '@/components/ProgressRing';
@@ -34,12 +39,21 @@ export default function AboutPage() {
         examSessions,
         syncToFirestore,
         syncStatus,
+        logout,
+        deleteAccount,
     } = useAppStore();
 
+    const router = useRouter();
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState(profile);
     const [mounted, setMounted] = useState(false);
     const [saved, setSaved] = useState(false);
+
+    // Auth settings states
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [logoutInput, setLogoutInput] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteInput, setDeleteInput] = useState('');
 
     useEffect(() => {
         setMounted(true);
@@ -71,6 +85,20 @@ export default function AboutPage() {
         // Force immediate sync
         setTimeout(() => syncToFirestore(), 100);
         setTimeout(() => setSaved(false), 2000);
+    };
+
+    const handleLogout = () => {
+        if (logoutInput === 'logout') {
+            logout();
+            router.push('/login');
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteInput === `delete ${username}`) {
+            await deleteAccount();
+            router.push('/login');
+        }
     };
 
     const socialLinks = [
@@ -293,6 +321,93 @@ export default function AboutPage() {
             {!editing && profile.leetcode && (
                 <LeetCodeStats username={profile.leetcode} />
             )}
+
+            {/* Account Settings */}
+            <div className="card-nord p-4 space-y-4">
+                <h3 className="text-sm font-bold text-nord11 flex items-center gap-1.5">
+                    <AlertTriangle size={16} /> Danger Zone
+                </h3>
+
+                {/* Logout Section */}
+                {!showLogoutConfirm ? (
+                    <button
+                        onClick={() => setShowLogoutConfirm(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-nord11/10 text-nord11 border border-nord11/20 hover:bg-nord11/20 transition-all font-semibold text-sm"
+                    >
+                        <LogOut size={16} /> Logout
+                    </button>
+                ) : (
+                    <div className="p-4 rounded-xl bg-nord11/10 border border-nord11/30 space-y-3 animate-fade-in-up">
+                        <p className="text-xs text-nord4/80 font-medium">Please type <span className="text-nord11 font-bold">logout</span> to confirm.</p>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={logoutInput}
+                                onChange={(e) => setLogoutInput(e.target.value)}
+                                onPaste={(e) => e.preventDefault()}
+                                placeholder="logout"
+                                className="flex-1 bg-nord0/50 border border-nord11/30 rounded-lg px-3 py-2 text-sm text-nord5 placeholder:text-nord3/40 focus:outline-none focus:ring-1 focus:ring-nord11/50"
+                            />
+                            <button
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className="p-2 rounded-lg text-nord4/50 hover:text-nord4 hover:bg-nord0/50 transition-all"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            disabled={logoutInput !== 'logout'}
+                            className="w-full py-2 rounded-lg bg-nord11 text-nord0 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            Confirm Logout
+                        </button>
+                    </div>
+                )}
+
+                {/* Delete Account Section */}
+                {!showDeleteConfirm ? (
+                    <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-nord11/70 border border-nord11/10 hover:bg-nord11/10 hover:border-nord11/20 transition-all font-semibold text-xs mt-2"
+                    >
+                        <Trash2 size={14} /> Delete Account
+                    </button>
+                ) : (
+                    <div className="p-4 rounded-xl bg-nord11/5 border border-nord11/20 space-y-3 animate-fade-in-up mt-2">
+                        <div className="bg-nord11/10 p-2.5 rounded-lg border border-nord11/20">
+                            <p className="text-xs text-nord11 font-semibold flex items-start gap-1.5 mb-0">
+                                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                                Warning: This action is irreversible. You will not be able to log back in as @{username} ever again.
+                            </p>
+                        </div>
+                        <p className="text-xs text-nord4/80">Type <span className="text-nord11 font-bold">delete {username}</span> to permanently disable your account.</p>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={deleteInput}
+                                onChange={(e) => setDeleteInput(e.target.value)}
+                                onPaste={(e) => e.preventDefault()}
+                                placeholder={`delete ${username}`}
+                                className="flex-1 bg-nord0/50 border border-nord11/30 rounded-lg px-3 py-2 text-sm text-nord5 placeholder:text-nord3/40 focus:outline-none focus:ring-1 focus:ring-nord11/50"
+                            />
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="p-2 rounded-lg text-nord4/50 hover:text-nord4 hover:bg-nord0/50 transition-all"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleteInput !== `delete ${username}`}
+                            className="w-full py-2 rounded-lg bg-nord11/20 text-nord11 border border-nord11/30 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nord11 hover:text-nord0 transition-all"
+                        >
+                            Permanently Delete Account
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
