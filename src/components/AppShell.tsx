@@ -10,19 +10,31 @@ import PomodoroWidget from '@/components/PomodoroWidget';
 import AuthGuard from '@/components/AuthGuard';
 import PremiumPopup from '@/components/PremiumPopup';
 import LearnAIPopup from '@/components/LearnAIPopup';
+import MobileBlockedScreen from '@/components/MobileBlockedScreen';
+import { isMobile as checkIsMobile } from '@/utils/isMobile';
 import { useEffect, useState } from 'react';
-//Reset issue
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isLoggedIn } = useAppStore();
     const [mounted, setMounted] = useState(false);
+    const [isMobileDevice, setIsMobileDevice] = useState(false);
 
     useEffect(() => {
-        // 1. Mobile Security: Reroute mobile users to Rick Roll
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            window.location.href = "https://youtu.be/dQw4w9WgXcQ?si=cXzya7Y7bEntcdNx";
+        // 1. Device Detection
+        const handleResize = () => {
+            setIsMobileDevice(checkIsMobile());
+        };
+
+        handleResize(); // Initial check
+        window.addEventListener('resize', handleResize);
+
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (isMobileDevice) {
+            setMounted(true);
             return;
         }
 
@@ -35,7 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         // 3. Disable Right Click
         const handleContextMenu = (e: MouseEvent) => e.preventDefault();
 
-        // 3. Disable DevTools Shortcuts
+        // 4. Disable DevTools Shortcuts
         const handleKeyDown = (e: KeyboardEvent) => {
             // Disable F12
             if (e.key === 'F12') {
@@ -63,7 +75,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             document.removeEventListener('contextmenu', handleContextMenu);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [isMobileDevice]);
+
+    // If we detected a mobile device, show the blocked screen
+    if (mounted && isMobileDevice) {
+        return <MobileBlockedScreen />;
+    }
 
     // Login page and root redirect — no sidebar
     const isAuthPage = pathname === '/login' || pathname === '/';
