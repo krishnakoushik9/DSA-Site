@@ -9,7 +9,9 @@
  *   - Stdin input panel
  */
 
-const JUDGE0_BASE_URL = 'http://56.228.42.31:2358';
+// Backend proxy call to bypass Vercel HTTPS mixed-content policies touching HTTP judge server.
+// The actual Judge0 base URL is now configured inside /app/api/execute/route.ts
+const EXECUTE_PROXY_URL = '/api/execute';
 
 // Supported language IDs
 export const LANGUAGE_MAP: Record<string, number> = {
@@ -95,7 +97,7 @@ export async function executeCode(
     languageId: number,
     stdin?: string
 ): Promise<RunResult> {
-    const endpoint = `${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`;
+    const endpoint = EXECUTE_PROXY_URL;
 
     const payload: Record<string, unknown> = {
         source_code: sourceCode,
@@ -115,12 +117,23 @@ export async function executeCode(
     });
 
     if (!response.ok) {
-        throw new Error(`Judge0 API error: ${response.status} ${response.statusText}`);
+        if (response.status === 500) {
+            throw new Error(`Execution error. Execution server may be down.`);
+        }
+        let errorMessage = `API error: ${response.status} ${response.statusText}`;
+        try {
+            const errData = await response.json();
+            if (errData && errData.error) {
+                errorMessage = errData.error;
+            }
+        } catch (e) { }
+        throw new Error(errorMessage);
     }
 
-    const data: Judge0Response = await response.json();
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
 
-    return parseResponse(data);
+    return parseResponse(data as Judge0Response);
 }
 
 /**
