@@ -53,6 +53,12 @@ const productSteps = [
         color: 'var(--th-nord8)',
     },
     {
+        icon: Sparkles,
+        title: 'Execute & Test',
+        desc: 'Run code intelligently against AI-generated bounds and edge cases to validate logic.',
+        color: 'var(--th-nord15)', // A vibrant color for the new feature
+    },
+    {
         icon: Target,
         title: 'Track',
         desc: 'Your streaks, ratings, and topic completion are automatically tracked.',
@@ -68,10 +74,10 @@ const productSteps = [
 
 const featureHighlights = [
     { icon: Code2, label: '750+ Curated Problems' },
+    { icon: Sparkles, label: 'AI Test Case Engine', highlight: true },
     { icon: Target, label: 'Topic-based Study Path' },
     { icon: Flame, label: 'Daily Streak Tracking' },
     { icon: Calendar, label: 'Calendar Planning' },
-    { icon: Award, label: 'Automated Exams' },
     { icon: Briefcase, label: 'Company Prep Mode' },
 ];
 
@@ -436,9 +442,9 @@ export default function LoginPage() {
                 </motion.div>
 
                 {/* ── Phase 3: Visual Product Walkthrough ── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mb-24 relative">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-6xl mb-24 relative">
                     {/* Connection lines (desktop only) */}
-                    <div className="hidden md:block absolute top-[40px] left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-nord3/40 to-transparent" />
+                    <div className="hidden lg:block absolute top-[56px] left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
                     {productSteps.map((s, i) => (
                         <motion.div
@@ -446,11 +452,11 @@ export default function LoginPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6 + i * 0.2 }}
-                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl hover:bg-white/[0.05] transition-all group relative"
+                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl hover:bg-white/[0.05] transition-all group relative text-center"
                         >
-                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform"
-                                style={{ background: `color-mix(in srgb, ${s.color} 15%, transparent)`, color: s.color }}>
-                                <s.icon size={28} />
+                            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform relative z-10"
+                                style={{ backgroundColor: 'var(--th-nord0)', color: s.color, boxShadow: `0 0 20px color-mix(in srgb, ${s.color} 20%, transparent)` }}>
+                                <span className="font-bold text-lg tracking-wider">0{i + 1}</span>
                             </div>
                             <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--th-nord5)' }}>{s.title}</h3>
                             <p className="text-sm leading-relaxed opacity-60" style={{ color: 'var(--th-nord4)' }}>{s.desc}</p>
@@ -472,6 +478,7 @@ export default function LoginPage() {
                                 {[
                                     { text: 'Pick Topic', color: 'var(--th-nord8)' },
                                     { text: 'Solve Problems', color: 'var(--th-nord9)' },
+                                    { text: 'Execute AI Tests', color: 'var(--th-nord15)' },
                                     { text: 'Track Progress', color: 'var(--th-nord10)' },
                                     { text: 'Build Streak', color: 'var(--th-nord14)' },
                                     { text: 'Crack Interviews', color: 'var(--th-nord12)' },
@@ -674,16 +681,22 @@ export default function LoginPage() {
                 <div className="w-full max-w-5xl py-24">
                     <h2 className="text-xl font-bold opacity-30 uppercase tracking-[.25em] text-center mb-12">System Features</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {featureHighlights.map((f, i) => (
+                        {featureHighlights.map((f: any, i) => (
                             <motion.div
                                 key={i}
                                 whileHover={{ y: -5 }}
-                                className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center gap-3 text-center"
+                                className={`p-4 rounded-2xl border flex flex-col items-center gap-3 text-center relative overflow-hidden transition-all ${f.highlight ? 'bg-nord14/10 border-nord14/30 shadow-[0_0_20px_rgba(163,190,140,0.15)] scale-105 z-10' : 'bg-white/[0.02] border-white/5'}`}
                             >
-                                <div className="w-8 h-8 rounded-lg bg-nord3/40 flex items-center justify-center" style={{ color: 'var(--th-nord8)' }}>
+                                {f.highlight && (
+                                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-nord14/30 blur-xl rounded-full animate-pulse" />
+                                )}
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center relative z-10" style={{ backgroundColor: f.highlight ? 'rgba(163,190,140,0.2)' : 'rgba(76,86,106,0.4)', color: f.highlight ? 'var(--th-nord14)' : 'var(--th-nord8)' }}>
                                     <f.icon size={16} />
                                 </div>
-                                <span className="text-[11px] font-bold leading-tight" style={{ color: 'var(--th-nord5)' }}>{f.label}</span>
+                                <span className={`text-[11px] font-bold leading-tight relative z-10 ${f.highlight ? 'text-nord14 drop-shadow-md' : 'text-nord5'}`}>{f.label}</span>
+                                {f.highlight && (
+                                    <span className="absolute top-1.5 right-1.5 text-[7px] uppercase font-black bg-nord14 text-nord0 px-1.5 py-0.5 rounded shadow-sm">Hot</span>
+                                )}
                             </motion.div>
                         ))}
                     </div>
