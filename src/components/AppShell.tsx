@@ -84,6 +84,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // Login page and root redirect — no sidebar
     const isAuthPage = pathname === '/login' || pathname === '/';
+    const isRunnerPage = pathname === '/runner';
 
     if (!mounted) {
         return (
@@ -112,7 +113,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         {children}
                     </div>
                 </main>
-                <PomodoroWidget />
+                {!isRunnerPage && <PomodoroWidget />}
                 <FloatingDock />
             </div>
             <PremiumPopup />

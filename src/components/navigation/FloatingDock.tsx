@@ -16,6 +16,7 @@ import {
     Laugh,
     Briefcase,
     BrainCircuit,
+    Zap,
 } from 'lucide-react';
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
     { href: '/exams', label: 'Exams', icon: GraduationCap },
     { href: '/workspace', label: 'Workspace', icon: PenTool },
     { href: '/company', label: 'Company Mode', icon: Briefcase },
+    { href: '/runner', label: 'Runner', icon: Zap },
     { href: '/community', label: 'Community', icon: MessageSquare },
     { href: '/perks', label: 'Perks', icon: Gift },
     { href: '/memes', label: 'Krack Updates', icon: Laugh },

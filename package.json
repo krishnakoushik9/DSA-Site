@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
+    "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^9.0.0",
     "@types/prismjs": "^1.26.6",

@@ -499,3 +499,46 @@ body {
 .code-function {
   color: var(--th-nord8);
 }
+
+/* ============================================================
+   RUNNER IDE STYLES
+   ============================================================ */
+@keyframes runnerPopupIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes runnerDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes runnerPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.45);
+  }
+}
+
+.runner-glow {
+  animation: runnerPulse 2.5s ease-in-out infinite;
+}
