@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import {
     Briefcase, Search, CheckCircle2, Circle,
-    ExternalLink, ChevronRight, Loader2, Sparkles, Building2, Laugh
+    ExternalLink, ChevronRight, Loader2, Sparkles, Building2, Laugh, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -378,6 +378,20 @@ export default function CompanyModePage() {
                                                                             Freq: {q.frequency}
                                                                         </span>
                                                                     )}
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const params = new URLSearchParams({
+                                                                                title: q.title,
+                                                                                difficulty: q.difficulty,
+                                                                                url: q.url
+                                                                            });
+                                                                            window.location.href = `/runner?${params.toString()}`;
+                                                                        }}
+                                                                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-medium transition-all duration-300 bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-[#030303] shrink-0 opacity-0 group-hover:opacity-100"
+                                                                    >
+                                                                        <Zap size={10} />
+                                                                        <span>Solve</span>
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
