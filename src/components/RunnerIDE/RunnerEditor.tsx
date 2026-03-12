@@ -10,6 +10,7 @@ interface RunnerEditorProps {
     onCodeChange: (value: string) => void;
     onRun: () => void;
     onClearOutput: () => void;
+    onSave?: () => void;
 }
 
 export default function RunnerEditor({
@@ -18,12 +19,15 @@ export default function RunnerEditor({
     onCodeChange,
     onRun,
     onClearOutput,
+    onSave,
 }: RunnerEditorProps) {
     const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
     const onRunRef = useRef(onRun);
     const onClearRef = useRef(onClearOutput);
+    const onSaveRef = useRef(onSave);
     onRunRef.current = onRun;
     onClearRef.current = onClearOutput;
+    onSaveRef.current = onSave;
 
     const monacoLang = MONACO_LANGUAGE_MAP[language] || 'plaintext';
 
@@ -47,6 +51,18 @@ export default function RunnerEditor({
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL],
             run: () => {
                 onClearRef.current();
+            },
+        });
+
+        // Ctrl+S → Save Code
+        editor.addAction({
+            id: 'runner-save-code',
+            label: 'Save code to cloud',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+            run: () => {
+                if (onSaveRef.current) {
+                    onSaveRef.current();
+                }
             },
         });
 

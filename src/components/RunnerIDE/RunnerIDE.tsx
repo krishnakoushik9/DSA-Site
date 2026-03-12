@@ -370,7 +370,7 @@ export default function RunnerIDE() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleRunCode, handleClearOutput]);
+    }, [handleRunCode, handleClearOutput, handleSaveToFirebase]);
 
     // Close history dropdown on outside click
     useEffect(() => {
@@ -861,6 +861,7 @@ export default function RunnerIDE() {
                                 onCodeChange={setCode}
                                 onRun={handleRunCode}
                                 onClearOutput={handleClearOutput}
+                                onSave={handleSaveToFirebase}
                             />
                             {isRunning && (
                                 <div

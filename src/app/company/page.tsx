@@ -7,6 +7,11 @@ import {
     ExternalLink, ChevronRight, Loader2, Sparkles, Building2, Laugh
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    saveCompanyList, loadCompanyList,
+    saveCompanyQuestions, loadCompanyQuestions
+} from '@/lib/firebase';
+
 
 interface CompanyQuestion {
     id: string; // The LeetCode ID
@@ -44,20 +49,32 @@ export default function CompanyModePage() {
 
         const fetchCompanies = async () => {
             try {
-                // Fetch directory contents from the repository
+                // Try GitHub first
                 const res = await fetch('https://api.github.com/repos/snehasishroy/leetcode-companywise-interview-questions/contents');
-                if (!res.ok) throw new Error('Failed to fetch companies');
-                const data: any[] = await res.json();
 
-                // Filter only directories (which represent companies)
+                if (!res.ok) {
+                    // Fallback to Firebase
+                    console.log('GitHub API limit reached, trying Firebase cache...');
+                    const cachedCompanies = await loadCompanyList();
+                    if (cachedCompanies) {
+                        setCompanies(cachedCompanies);
+                        setLoadingCompanies(false);
+                        return;
+                    }
+                    throw new Error('Could not load company list. GitHub API limit reached and no cache available.');
+                }
+
+                const data: any[] = await res.json();
                 const companyNames = data
                     .filter(item => item.type === 'dir' && !item.name.startsWith('.'))
                     .map(item => item.name);
 
                 setCompanies(companyNames);
-            } catch (err) {
+                // Background update cache
+                saveCompanyList(companyNames);
+            } catch (err: any) {
                 console.error(err);
-                setError('Could not load company list. GitHub API limit may be reached.');
+                setError(err.message || 'Could not load company list.');
             } finally {
                 setLoadingCompanies(false);
             }
@@ -66,6 +83,7 @@ export default function CompanyModePage() {
         fetchCompanies();
     }, [pageLoading]);
 
+
     const fetchQuestions = async (company: string) => {
         setLoadingQuestions(true);
         setError(null);
@@ -73,23 +91,42 @@ export default function CompanyModePage() {
         setSelectedCompany(company);
 
         try {
+            // Priority 1: GitHub Raw
             const res = await fetch(`https://raw.githubusercontent.com/snehasishroy/leetcode-companywise-interview-questions/master/${encodeURIComponent(company)}/all.csv`);
-            if (!res.ok) {
-                // Fallback: try finding other csvs if all.csv doesn't exist
-                const dirRes = await fetch(`https://api.github.com/repos/snehasishroy/leetcode-companywise-interview-questions/contents/${encodeURIComponent(company)}`);
-                if (!dirRes.ok) throw new Error('Questions not found for this company.');
+            if (res.ok) {
+                const csvText = await res.text();
+                const parsed = parseAndSetCSV(csvText);
+                if (parsed && parsed.length > 0) {
+                    saveCompanyQuestions(company, parsed); // Background cache update
+                    return;
+                }
+            }
 
+            // Priority 2: GitHub Contents API Search
+            const dirRes = await fetch(`https://api.github.com/repos/snehasishroy/leetcode-companywise-interview-questions/contents/${encodeURIComponent(company)}`);
+            if (dirRes.ok) {
                 const dirData: any[] = await dirRes.json();
                 const csvFile = dirData.find(item => item.name.endsWith('.csv'));
-                if (!csvFile) throw new Error('No question data found for this company.');
+                if (csvFile) {
+                    const fallbackRes = await fetch(csvFile.download_url);
+                    if (fallbackRes.ok) {
+                        const csvText = await fallbackRes.text();
+                        const parsed = parseAndSetCSV(csvText);
+                        if (parsed && parsed.length > 0) {
+                            saveCompanyQuestions(company, parsed);
+                            return;
+                        }
+                    }
+                }
+            }
 
-                const fallbackRes = await fetch(csvFile.download_url);
-                if (!fallbackRes.ok) throw new Error('Failed to download question data.');
-                const csvText = await fallbackRes.text();
-                parseAndSetCSV(csvText);
+            // Priority 3: Firebase Cache
+            console.log(`GitHub API failed for ${company}, trying Firebase cache...`);
+            const cachedQuestions = await loadCompanyQuestions(company);
+            if (cachedQuestions) {
+                setQuestions(cachedQuestions);
             } else {
-                const csvText = await res.text();
-                parseAndSetCSV(csvText);
+                throw new Error('Questions not found. GitHub rate limit might be reached and no cache available.');
             }
         } catch (err: any) {
             console.error(err);
@@ -99,9 +136,10 @@ export default function CompanyModePage() {
         }
     };
 
-    const parseAndSetCSV = (csvText: string) => {
+
+    const parseAndSetCSV = (csvText: string): CompanyQuestion[] | null => {
         const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-        if (lines.length <= 1) return; // Only header or empty
+        if (lines.length <= 1) return null; // Only header or empty
 
         // ID,URL,Title,Difficulty,Acceptance %,Frequency %
         const parsed: CompanyQuestion[] = lines.slice(1).map(line => {
@@ -120,7 +158,9 @@ export default function CompanyModePage() {
         }).filter(Boolean) as CompanyQuestion[];
 
         setQuestions(parsed);
+        return parsed;
     };
+
 
     const getDifficultyColor = (diff: string) => {
         const d = diff?.toLowerCase() || '';

@@ -425,3 +425,90 @@ export async function loadCodeHistory(username: string): Promise<SavedCode[]> {
         return [];
     }
 }
+// ============================================================
+// COMPANY DATA API (Global Cache)
+// ============================================================
+
+/**
+ * Save the global list of companies to Firestore.
+ */
+export async function saveCompanyList(companies: string[]): Promise<boolean> {
+    try {
+        const url = `${FIRESTORE_BASE}/companyData/list`;
+        const body = {
+            fields: {
+                data: { stringValue: JSON.stringify(companies) },
+                updatedAt: { stringValue: new Date().toISOString() },
+            },
+        };
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Load the global list of companies from Firestore.
+ */
+export async function loadCompanyList(): Promise<string[] | null> {
+    try {
+        const url = `${FIRESTORE_BASE}/companyData/list`;
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) return null;
+
+        const doc = await response.json();
+        const data = doc.fields?.data?.stringValue;
+        return data ? JSON.parse(data) : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Save questions for a specific company to Firestore.
+ */
+export async function saveCompanyQuestions(company: string, questions: any[]): Promise<boolean> {
+    try {
+        // Sanitize company name for use as document ID (Firestore IDs can't contain slashes)
+        const docId = encodeURIComponent(company).replace(/\./g, '%2E');
+        const url = `${FIRESTORE_BASE}/companyQuestions/${docId}`;
+        const body = {
+            fields: {
+                company: { stringValue: company },
+                data: { stringValue: JSON.stringify(questions) },
+                updatedAt: { stringValue: new Date().toISOString() },
+            },
+        };
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Load questions for a specific company from Firestore.
+ */
+export async function loadCompanyQuestions(company: string): Promise<any[] | null> {
+    try {
+        const docId = encodeURIComponent(company).replace(/\./g, '%2E');
+        const url = `${FIRESTORE_BASE}/companyQuestions/${docId}`;
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) return null;
+
+        const doc = await response.json();
+        const data = doc.fields?.data?.stringValue;
+        return data ? JSON.parse(data) : null;
+    } catch {
+        return null;
+    }
+}
