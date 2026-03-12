@@ -390,13 +390,7 @@ export async function loadCodeHistory(username: string): Promise<SavedCode[]> {
                         value: { stringValue: username }
                     }
                 },
-                orderBy: [
-                    {
-                        field: { fieldPath: 'timestamp' },
-                        direction: 'DESCENDING'
-                    }
-                ],
-                limit: 50
+                limit: 200 // Need to fetch more to sort locally reliably if no index
             }
         };
 
@@ -420,7 +414,10 @@ export async function loadCodeHistory(username: string): Promise<SavedCode[]> {
             })
             .filter((c: any) => c !== null);
 
-        return codes;
+        // Sort descending locally to avoid requiring a composite index
+        codes.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        return codes.slice(0, 50); // limit to 50
     } catch {
         return [];
     }

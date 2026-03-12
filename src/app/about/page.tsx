@@ -21,9 +21,11 @@ import {
     LogOut,
     Trash2,
     X,
+    Cloud,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
+import { loadCodeHistory, SavedCode } from '@/lib/firebase';
 import { getAllQuestions, getTopicProgress, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
 import ProgressRing from '@/components/ProgressRing';
 import LeetCodeStats from '@/components/LeetCodeStats';
@@ -54,6 +56,25 @@ export default function AboutPage() {
     const [logoutInput, setLogoutInput] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
+
+    const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
+    const [loadingCodes, setLoadingCodes] = useState(false);
+    const [showCodes, setShowCodes] = useState(false);
+    const [selectedCode, setSelectedCode] = useState<SavedCode | null>(null);
+
+    const fetchSavedCodes = async () => {
+        if (!username) return;
+        setLoadingCodes(true);
+        setShowCodes(true);
+        try {
+            const codes = await loadCodeHistory(username);
+            setSavedCodes(codes);
+        } catch {
+            setSavedCodes([]);
+        } finally {
+            setLoadingCodes(false);
+        }
+    };
 
     useEffect(() => {
         setMounted(true);
@@ -321,6 +342,53 @@ export default function AboutPage() {
             {!editing && profile.leetcode && (
                 <LeetCodeStats username={profile.leetcode} />
             )}
+
+            {/* Cloud Saved Codes */}
+            <div className="card-nord p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-nord5 flex items-center gap-1.5">
+                        <Cloud size={16} className="text-nord8" /> Cloud Saved Codes
+                    </h3>
+                    <button
+                        onClick={() => showCodes ? setShowCodes(false) : fetchSavedCodes()}
+                        className="px-3 py-1.5 text-xs font-semibold bg-nord3/20 hover:bg-nord3/40 rounded-lg text-nord4 transition-all"
+                    >
+                        {showCodes ? 'Hide' : 'View Codes'}
+                    </button>
+                </div>
+
+                {showCodes && (
+                    <div className="mt-4 space-y-2">
+                        {loadingCodes ? (
+                            <div className="text-nord4/50 text-xs text-center py-4 animate-pulse">Loading cloud codes...</div>
+                        ) : savedCodes.length === 0 ? (
+                            <div className="text-nord4/50 text-xs text-center py-4">No codes saved to cloud yet</div>
+                        ) : (
+                            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+                                {savedCodes.map(code => (
+                                    <div key={code.id} className="p-3 bg-nord0/50 rounded-lg border border-nord3/30 cursor-pointer hover:border-nord8/40 transition-colors" onClick={() => setSelectedCode(selectedCode?.id === code.id ? null : code)}>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-nord6 flex items-center gap-2">
+                                                {code.language} <span className="px-1.5 py-0.5 rounded bg-nord3/20 text-[9px] text-nord4 font-mono">{new Date(code.timestamp).toLocaleString()}</span>
+                                            </span>
+                                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded overflow-hidden max-w-[150px] whitespace-nowrap text-ellipsis ${code.result.includes('Success') || code.result.includes('Accepted') ? 'bg-nord14/20 text-nord14' : 'bg-nord11/20 text-nord11'}`}>
+                                                {code.result}
+                                            </span>
+                                        </div>
+                                        {selectedCode?.id === code.id && (
+                                            <div className="mt-3">
+                                                <pre className="text-[10px] p-2 bg-[#0d1117] rounded-md border border-nord3/20 text-nord4 font-mono overflow-x-auto">
+                                                    {code.code}
+                                                </pre>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Account Settings */}
             <div className="card-nord p-4 space-y-4">
