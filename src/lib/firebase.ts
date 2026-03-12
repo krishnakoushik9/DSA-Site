@@ -334,3 +334,94 @@ export async function markNotificationsRead(username: string): Promise<boolean> 
         return false;
     }
 }
+// ============================================================
+// CODES HISTORY API
+// ============================================================
+
+export interface SavedCode {
+    id: string;
+    username: string;
+    code: string;
+    language: string;
+    result: string;
+    timestamp: string;
+    deviceIp: string;
+}
+
+/**
+ * Save code to history.
+ * Each document: codes/{unique_id}
+ */
+export async function saveCodeToHistory(savedCode: SavedCode): Promise<boolean> {
+    try {
+        const url = `${FIRESTORE_BASE}/codes/${savedCode.id}`;
+        const body = {
+            fields: {
+                data: { stringValue: JSON.stringify(savedCode) },
+                username: { stringValue: savedCode.username },
+                timestamp: { stringValue: savedCode.timestamp },
+            },
+        };
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Load code history for a user.
+ * Queries Firestore using runQuery for filtering.
+ */
+export async function loadCodeHistory(username: string): Promise<SavedCode[]> {
+    try {
+        const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+        const body = {
+            structuredQuery: {
+                from: [{ collectionId: 'codes' }],
+                where: {
+                    fieldFilter: {
+                        field: { fieldPath: 'username' },
+                        op: 'EQUAL',
+                        value: { stringValue: username }
+                    }
+                },
+                orderBy: [
+                    {
+                        field: { fieldPath: 'timestamp' },
+                        direction: 'DESCENDING'
+                    }
+                ],
+                limit: 50
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) return [];
+
+        const results = await response.json();
+        const codes: SavedCode[] = results
+            .filter((r: any) => r.document)
+            .map((r: any) => {
+                try {
+                    return JSON.parse(r.document.fields.data.stringValue);
+                } catch {
+                    return null;
+                }
+            })
+            .filter((c: any) => c !== null);
+
+        return codes;
+    } catch {
+        return [];
+    }
+}

@@ -24,6 +24,9 @@ import {
     LANGUAGE_MAP,
     LANGUAGE_TEMPLATES,
 } from '@/services/judge0RunnerAPI';
+import { useAppStore } from '@/store/useAppStore';
+import { saveCodeToHistory, loadCodeHistory, SavedCode } from '@/lib/firebase';
+import { toast } from 'react-hot-toast'; // Assuming react-hot-toast is available based on professional aesthetic
 
 export interface TestCase {
     id: number;
@@ -73,6 +76,89 @@ export default function RunnerIDE() {
     const [showHistory, setShowHistory] = useState(false);
     const historyRef = useRef<HTMLDivElement>(null);
     const runCountRef = useRef(0);
+
+    const { username } = useAppStore();
+
+    // Firebase Saved Codes
+    const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [showSavedHistory, setShowSavedHistory] = useState(false);
+
+    // Persistence: Load from LocalStorage
+    useEffect(() => {
+        const savedLang = localStorage.getItem('runner-language');
+        const savedCode = localStorage.getItem('runner-code');
+
+        if (savedLang && LANGUAGE_TEMPLATES[savedLang]) {
+            setLanguage(savedLang);
+        }
+        if (savedCode) {
+            setCode(savedCode);
+        }
+    }, []);
+
+    // Persistence: Save to LocalStorage on change
+    useEffect(() => {
+        localStorage.setItem('runner-language', language);
+        localStorage.setItem('runner-code', code);
+    }, [language, code]);
+
+    // Load Firebase History
+    const fetchHistory = useCallback(async () => {
+        if (!username) return;
+        setIsLoadingHistory(true);
+        const history = await loadCodeHistory(username);
+        setSavedCodes(history);
+        setIsLoadingHistory(false);
+    }, [username]);
+
+    useEffect(() => {
+        if (showSavedHistory) {
+            fetchHistory();
+        }
+    }, [showSavedHistory, fetchHistory]);
+
+    // Save to Firebase (Ctrl+S)
+    const handleSaveToFirebase = useCallback(async () => {
+        if (!username) {
+            toast.error('Please login to save your code');
+            return;
+        }
+
+        const toastId = toast.loading('Saving to cloud...');
+
+        try {
+            // Get IP
+            let ip = 'Unknown';
+            try {
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                ip = ipData.ip;
+            } catch (e) {
+                console.warn('Could not fetch IP', e);
+            }
+
+            const savedCode: SavedCode = {
+                id: `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                username,
+                code,
+                language,
+                result: statusDescription || 'Not executed',
+                timestamp: new Date().toISOString(),
+                deviceIp: ip,
+            };
+
+            const success = await saveCodeToHistory(savedCode);
+            if (success) {
+                toast.success('Code saved to history!', { id: toastId });
+                fetchHistory();
+            } else {
+                toast.error('Failed to save code. Try again.', { id: toastId });
+            }
+        } catch (err) {
+            toast.error('An error occurred while saving.', { id: toastId });
+        }
+    }, [username, code, language, statusDescription, fetchHistory]);
 
     // Handle language change → update editor + load template
     const handleLanguageChange = useCallback(
@@ -276,6 +362,10 @@ export default function RunnerIDE() {
             if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
                 e.preventDefault();
                 handleClearOutput();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSaveToFirebase();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -568,6 +658,111 @@ export default function RunnerIDE() {
                                 )}
                             </div>
                         )}
+
+                        {/* Saved History */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowSavedHistory(!showSavedHistory)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] transition-all duration-200"
+                                style={{
+                                    color: '#8b949e',
+                                    backgroundColor: showSavedHistory
+                                        ? 'rgba(255,255,255,0.06)'
+                                        : 'transparent',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor =
+                                        'rgba(255,255,255,0.06)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!showSavedHistory) {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                    }
+                                }}
+                            >
+                                <Lock size={12} className={username ? 'text-nord14' : 'text-nord11'} />
+                                <span>Cloud Saver</span>
+                                <ChevronDown
+                                    size={10}
+                                    style={{
+                                        transform: showSavedHistory
+                                            ? 'rotate(180deg)'
+                                            : 'rotate(0deg)',
+                                        transition: 'transform 0.2s',
+                                    }}
+                                />
+                            </button>
+
+                            {showSavedHistory && (
+                                <div
+                                    className="absolute top-full right-0 mt-2 py-1 rounded-xl shadow-2xl z-50 w-[320px] overflow-hidden"
+                                    style={{
+                                        backgroundColor: '#1c2333',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        animation: 'runnerDropdownIn 0.15s ease-out',
+                                    }}
+                                >
+                                    <div
+                                        className="px-3 py-2 text-[10px] uppercase tracking-widest font-semibold flex justify-between items-center"
+                                        style={{
+                                            color: '#484f58',
+                                            borderBottom: '1px solid #21262d',
+                                        }}
+                                    >
+                                        <span>Cloud Sync History</span>
+                                        {isLoadingHistory && <Loader2 size={10} className="animate-spin" />}
+                                    </div>
+                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                        {!username ? (
+                                            <div className="p-4 text-center text-xs text-nord11">
+                                                Please login to view cloud history.
+                                            </div>
+                                        ) : savedCodes.length === 0 && !isLoadingHistory ? (
+                                            <div className="p-4 text-center text-xs text-nord3">
+                                                No saved codes found. Press Ctrl+S to save.
+                                            </div>
+                                        ) : (
+                                            savedCodes.map((entry) => (
+                                                <div
+                                                    key={entry.id}
+                                                    onClick={() => {
+                                                        if (confirm('Load this code? Current code will be overwritten.')) {
+                                                            setCode(entry.code);
+                                                            setLanguage(entry.language);
+                                                            setShowSavedHistory(false);
+                                                        }
+                                                    }}
+                                                    className="group flex flex-col px-3 py-2.5 hover:bg-white/[0.03] cursor-pointer transition-colors border-bottom border-white/[0.02]"
+                                                    style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}
+                                                >
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-[11px] font-bold text-nord4/90 flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-nord14" />
+                                                            {entry.language}
+                                                        </span>
+                                                        <span className="text-[9px] text-nord3 font-mono">
+                                                            {new Date(entry.timestamp).toLocaleString([], {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-nord3 truncate mb-1">
+                                                        {entry.result}
+                                                    </div>
+                                                    <div className="text-[9px] text-nord3/40 flex items-center gap-1">
+                                                        <AlignLeft size={8} />
+                                                        IP: {entry.deviceIp}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Shortcut hint */}
                         <span

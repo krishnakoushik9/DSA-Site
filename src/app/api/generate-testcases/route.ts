@@ -8,7 +8,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Code is required' }, { status: 400 });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY || "AIzaSyAljokJzgomoPAhJTEuhamQIrfS1VO4XpQ";
         if (!apiKey) {
             return NextResponse.json({ error: 'API key missing' }, { status: 500 });
         }
