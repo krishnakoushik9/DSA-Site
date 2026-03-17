@@ -13,6 +13,7 @@ import LearnAIPopup from '@/components/LearnAIPopup';
 import MobileBlockedScreen from '@/components/MobileBlockedScreen';
 import { isMobile as checkIsMobile } from '@/utils/isMobile';
 import { useEffect, useState } from 'react';
+import RetroThemeOverride from '@/components/RetroThemeOverride';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -100,6 +101,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthGuard>
+            <RetroThemeOverride />
             <div className="flex min-h-screen relative overflow-hidden">
                 <main className="flex-1 w-full transition-all duration-300 relative min-w-0 overflow-hidden pb-[120px]">
                     <div className="absolute top-2 right-2 lg:right-4 z-50">
