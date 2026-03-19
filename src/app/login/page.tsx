@@ -443,10 +443,15 @@ export default function LoginPage() {
 
             const isUsernameInvalid = username.length > 0 && (username.length < 5 || username.length > 20 || /[^a-z0-9_-]/i.test(username));
             if (usernameFocused && isUsernameInvalid && usernameInputRef.current && usernameTooltipRef.current) {
+                const middleware = [offset(8), flip(), shift({ padding: 8 })];
+                if (usernameArrowRef.current) {
+                    middleware.push(arrow({ element: usernameArrowRef.current }));
+                }
+
                 const { x, y, placement, middlewareData } = await computePosition(
                     usernameInputRef.current,
                     usernameTooltipRef.current,
-                    { placement: 'top', middleware: [offset(8), flip(), shift({ padding: 8 }), arrow({ element: usernameArrowRef.current })] }
+                    { placement: 'top', middleware }
                 );
                 if (!cleanup && usernameTooltipRef.current) {
                     Object.assign(usernameTooltipRef.current.style, { left: `${x}px`, top: `${y}px`, display: 'block' });
