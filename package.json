@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
+    "@floating-ui/dom": "^1.7.6",
     "@google/generative-ai": "^0.24.1",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^9.0.0",
     "@types/prismjs": "^1.26.6",
+    "@types/three": "^0.183.1",
     "@uiw/react-md-editor": "^4.0.11",
     "date-fns": "^4.1.0",
     "firebase": "^12.10.0",
