@@ -3,7 +3,7 @@
 // Bump APP_VERSION here + add a CHANGELOG entry on every release.
 // ============================================================
 
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.3.1';
 export const BUILD_DATE = '2026-05-20';
 
 export interface ChangelogEntry {
@@ -15,6 +15,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+    {
+        version: '1.3.1',
+        date: '2026-05-20',
+        label: 'patch',
+        title: 'Redistribution Behaviour Fix',
+        changes: [
+            { type: 'fix', text: 'Catch-up questions now REPLACE the day\'s scheduled problems, not add on top — no extra load on students.' },
+            { type: 'fix', text: 'getDayStatus evaluates only the catch-up pool on redistribution days (not both pools merged).' },
+            { type: 'fix', text: '"Catch-up days remaining" counter now excludes days where all questions are already solved.' },
+            { type: 'refactor', text: 'Unified question list in day detail panel (single activeQuestions source, no separate Catch-up section).' },
+        ],
+    },
     {
         version: '1.3.0',
         date: '2026-05-20',
