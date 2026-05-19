@@ -24,9 +24,11 @@ import {
     isPast,
     isSameDay,
     format,
+    formatDate,
 } from '@/lib/scheduler';
 import { TOPIC_COLORS } from '@/lib/types';
 import { getWorkoutForDate } from '@/lib/workout';
+import { getAllQuestions } from '@/lib/scheduler';
 
 interface Contest {
     id: string;
@@ -55,7 +57,7 @@ export default function CalendarPage() {
     const [mounted, setMounted] = useState(false);
     const [contests, setContests] = useState<Contest[]>([]);
 
-    const { completedQuestions, toggleQuestionComplete } = useAppStore();
+    const { completedQuestions, toggleQuestionComplete, redistribution } = useAppStore();
 
     useEffect(() => {
         setMounted(true);
@@ -81,18 +83,21 @@ export default function CalendarPage() {
 
     const getDayStatus = useCallback((date: Date) => {
         const dailyQs = getDailyQuestions(date, completedQuestions);
-        if (dailyQs.length === 0) return 'inactive';
-        const allDone = dailyQs.every(q => completedQuestions.includes(q.id));
-        const someDone = dailyQs.some(q => completedQuestions.includes(q.id));
+        const dateKey = formatDate(date);
+        const catchUpIds = (redistribution || {})[dateKey] || [];
+        if (dailyQs.length === 0 && catchUpIds.length === 0) return 'inactive';
+        const allQs = [...dailyQs, ...catchUpIds.map(id => ({ id } as { id: string }))]; // include catch-up
+        const allDone = allQs.every(q => completedQuestions.includes(q.id));
+        const someDone = allQs.some(q => completedQuestions.includes(q.id));
         const exam = isExamDay(date);
         const past = isPast(date) && !isToday(date);
         if (allDone) return 'complete';
-        if (past && someDone && !allDone) return 'missed-partial'; // some done but not all, past
+        if (past && someDone && !allDone) return 'missed-partial';
         if (past && !someDone) return 'missed';
         if (exam) return 'exam';
         if (someDone) return 'partial';
         return 'pending';
-    }, [completedQuestions]);
+    }, [completedQuestions, redistribution]);
 
     // Calculate lag: total uncompleted questions from all past non-complete days up to (not including) today
     const lagCount = (() => {
@@ -187,6 +192,8 @@ export default function CalendarPage() {
                             const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
                             const dayContests = contests.filter(c => isSameDay(new Date(c.startTime), date));
                             const isMissed = isCurrentMonth && (status === 'missed' || status === 'missed-partial');
+                            const dateKey = formatDate(date);
+                            const hasCatchUp = isCurrentMonth && !!(redistribution || {})[dateKey]?.length;
 
                             return (
                                 <button
@@ -266,6 +273,22 @@ export default function CalendarPage() {
                                         </div>
                                     )}
 
+                                    {/* Catch-up badge — shown when redistribution adds questions to this future day */}
+                                    {hasCatchUp && (
+                                        <div
+                                            className="absolute top-1 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded"
+                                            style={{
+                                                background: 'rgba(136,192,208,0.18)',
+                                                border: '1px solid rgba(136,192,208,0.4)',
+                                            }}
+                                            title={`${(redistribution || {})[dateKey]?.length} catch-up questions`}
+                                        >
+                                            <span className="text-[7px] font-bold" style={{ color: '#88C0D0' }}>
+                                                +{(redistribution || {})[dateKey]?.length}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* Status dots - always visible */}
                                     {status !== 'inactive' && (
                                         <div className="flex gap-0.5 mt-auto sm:mt-1">
@@ -291,6 +314,7 @@ export default function CalendarPage() {
                         toggleQuestionComplete={toggleQuestionComplete}
                         contests={contests.filter(c => isSameDay(new Date(c.startTime), selectedDate!))}
                         onClose={() => setSelectedDate(null)}
+                        redistribution={redistribution || {}}
                     />
                 )}
             </div>
@@ -304,12 +328,14 @@ function DayDetailPanel({
     toggleQuestionComplete,
     contests,
     onClose,
+    redistribution,
 }: {
     date: Date;
     completedQuestions: string[];
     toggleQuestionComplete: (id: string) => void;
     contests: Contest[];
     onClose: () => void;
+    redistribution: Record<string, string[]>;
 }) {
     const topic = getTopicForDate(date);
     const questions = getDailyQuestions(date, completedQuestions);
@@ -320,6 +346,14 @@ function DayDetailPanel({
     const diff = sched?.difficulty || '';
     const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
     const completedToday = questions.filter(q => completedQuestions.includes(q.id)).length;
+
+    // Catch-up questions for this date (from redistribution)
+    const dateKey = formatDate(date);
+    const catchUpIds = redistribution[dateKey] || [];
+    const allQs = getAllQuestions();
+    const catchUpQuestions = catchUpIds
+        .map(id => allQs.find(q => q.id === id))
+        .filter(Boolean) as (typeof allQs[number])[];
 
     return (
         <div className="w-[320px] flex-shrink-0 card-nord flex flex-col overflow-hidden animate-slide-in-left hidden xl:flex">
@@ -473,6 +507,57 @@ function DayDetailPanel({
                         })
                     )}
                 </div>
+
+                {/* Catch-up Questions (Redistributed) */}
+                {catchUpQuestions.length > 0 && (
+                    <div className="px-4 py-3 space-y-1.5 border-t border-nord8/10">
+                        <p className="text-nord8/60 text-[10px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <Zap size={9} className="text-nord8" /> Catch-up Problems
+                        </p>
+                        {catchUpQuestions.map((q) => {
+                            const isDone = completedQuestions.includes(q.id);
+                            return (
+                                <div
+                                    key={q.id}
+                                    className={`flex items-start gap-2 p-2 rounded-lg transition-all duration-150 border ${
+                                        isDone
+                                            ? 'bg-nord14/5 border-nord14/10'
+                                            : 'bg-nord8/5 border-nord8/15 hover:border-nord8/30'
+                                    }`}
+                                >
+                                    <button
+                                        onClick={() => toggleQuestionComplete(q.id)}
+                                        className="mt-px flex-shrink-0"
+                                    >
+                                        {isDone ? (
+                                            <CheckCircle2 size={14} className="text-nord14" />
+                                        ) : (
+                                            <Circle size={14} className="text-nord8/40 hover:text-nord8 transition-colors" />
+                                        )}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-xs font-medium leading-tight ${
+                                            isDone ? 'text-nord14/50 line-through' : 'text-nord5'
+                                        }`}>
+                                            {q.problem}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-[9px] text-nord8/40 font-medium">{q.topic}</span>
+                                            <span className="text-[9px] text-nord4/20">·</span>
+                                            <span className="text-[9px] text-nord4/25">{q.source}</span>
+                                            {q.url && (
+                                                <a href={q.url} target="_blank" rel="noopener noreferrer"
+                                                    className="text-nord8/40 hover:text-nord8 transition-colors">
+                                                    <ExternalLink size={9} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

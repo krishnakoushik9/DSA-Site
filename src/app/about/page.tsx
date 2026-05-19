@@ -22,6 +22,13 @@ import {
     Trash2,
     X,
     Cloud,
+    RefreshCw,
+    CalendarClock,
+    Info,
+    Tag,
+    ChevronDown,
+    ChevronUp,
+    Sparkles,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
@@ -29,6 +36,7 @@ import { loadCodeHistory, SavedCode } from '@/lib/firebase';
 import { getAllQuestions, getTopicProgress, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
 import ProgressRing from '@/components/ProgressRing';
 import LeetCodeStats from '@/components/LeetCodeStats';
+import { APP_VERSION, BUILD_DATE, CHANGELOG, LABEL_STYLES, CHANGE_TYPE_STYLES } from '@/lib/version';
 
 export default function AboutPage() {
     const {
@@ -43,6 +51,9 @@ export default function AboutPage() {
         syncStatus,
         logout,
         deleteAccount,
+        redistributeMissedProblems,
+        redistribution,
+        lastRedistributedAt,
     } = useAppStore();
 
     const router = useRouter();
@@ -56,6 +67,14 @@ export default function AboutPage() {
     const [logoutInput, setLogoutInput] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
+
+    // Redistribution states
+    const [showRedistConfirm, setShowRedistConfirm] = useState(false);
+    const [redistResult, setRedistResult] = useState<{ redistributedCount: number; daysUsed: number } | null>(null);
+    const [redistLoading, setRedistLoading] = useState(false);
+
+    // Changelog state
+    const [showChangelog, setShowChangelog] = useState(false);
 
     const [savedCodes, setSavedCodes] = useState<SavedCode[]>([]);
     const [loadingCodes, setLoadingCodes] = useState(false);
@@ -108,6 +127,17 @@ export default function AboutPage() {
         setTimeout(() => setSaved(false), 2000);
     };
 
+    const handleRedistribute = () => {
+        setRedistLoading(true);
+        // Slight delay for UX feedback
+        setTimeout(() => {
+            const result = redistributeMissedProblems();
+            setRedistResult(result);
+            setShowRedistConfirm(false);
+            setRedistLoading(false);
+        }, 600);
+    };
+
     const handleLogout = () => {
         if (logoutInput === 'logout') {
             logout();
@@ -145,23 +175,33 @@ export default function AboutPage() {
                     <h1 className="text-2xl font-bold text-nord6 tracking-tight">Profile</h1>
                     <p className="text-nord4/50 text-xs">Your DSA journey at a glance</p>
                 </div>
-                {!editing ? (
-                    <button
-                        onClick={() => setEditing(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-nord4/50 border border-nord3/20 hover:border-nord8/30 hover:text-nord8 transition-all"
+                <div className="flex items-center gap-2">
+                    {/* Version badge */}
+                    <span
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-nord8/10 border border-nord8/20 text-nord8 text-[10px] font-bold font-mono select-none"
+                        title={`Build date: ${BUILD_DATE}`}
                     >
-                        <Edit3 size={12} />
-                        Edit Profile
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleSave}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-nord14/15 text-nord14 border border-nord14/30 hover:bg-nord14/25 transition-all"
-                    >
-                        <Save size={12} />
-                        Save
-                    </button>
-                )}
+                        <Tag size={10} />
+                        v{APP_VERSION}
+                    </span>
+                    {!editing ? (
+                        <button
+                            onClick={() => setEditing(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-nord4/50 border border-nord3/20 hover:border-nord8/30 hover:text-nord8 transition-all"
+                        >
+                            <Edit3 size={12} />
+                            Edit Profile
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSave}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-nord14/15 text-nord14 border border-nord14/30 hover:bg-nord14/25 transition-all"
+                        >
+                            <Save size={12} />
+                            Save
+                        </button>
+                    )}
+                </div>
             </div>
 
             {saved && (
@@ -390,6 +430,114 @@ export default function AboutPage() {
                 )}
             </div>
 
+            {/* ── Redistribute Missed Problems ── */}
+            <div className="card-nord p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-nord8/15 flex items-center justify-center flex-shrink-0">
+                        <CalendarClock size={16} className="text-nord8" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-nord5">Redistribute Missed Problems</h3>
+                        <p className="text-[10px] text-nord4/40 mt-0.5">
+                            Missed 100+ problems? Spread them across the coming days automatically.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Info banner */}
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-nord8/8 border border-nord8/20">
+                    <Info size={13} className="text-nord8 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-nord4/60 leading-relaxed">
+                        This scans every past day since the study start date, collects all unsolved questions,
+                        and places them in batches of&nbsp;<strong className="text-nord4/80">4 per day</strong>&nbsp;
+                        on your upcoming calendar — starting <strong className="text-nord4/80">tomorrow</strong>.
+                        Your solved questions and Firebase data are <strong className="text-nord4/80">never deleted</strong>.
+                        You can re-run this any time to clear previous redistribution and start fresh.
+                    </p>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg bg-nord2/30 border border-nord3/15 p-3 text-center">
+                        <p className="text-lg font-bold text-nord11">
+                            {Object.values(redistribution || {}).flat().filter(id => !completedQuestions.includes(id)).length}
+                        </p>
+                        <p className="text-[9px] text-nord4/40 mt-0.5">Pending catch-up Qs</p>
+                    </div>
+                    <div className="rounded-lg bg-nord2/30 border border-nord3/15 p-3 text-center">
+                        <p className="text-lg font-bold text-nord8">
+                            {Object.keys(redistribution || {}).length}
+                        </p>
+                        <p className="text-[9px] text-nord4/40 mt-0.5">Catch-up days queued</p>
+                    </div>
+                </div>
+
+                {/* Last redistributed timestamp */}
+                {lastRedistributedAt && (
+                    <p className="text-[9px] text-nord4/30 flex items-center gap-1">
+                        <RefreshCw size={9} />
+                        Last redistributed: {new Date(lastRedistributedAt).toLocaleString()}
+                    </p>
+                )}
+
+                {/* Success result */}
+                {redistResult && redistResult.redistributedCount > 0 && (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-nord14/10 border border-nord14/25 animate-fade-in-up">
+                        <Check size={14} className="text-nord14 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-xs font-semibold text-nord14">Redistribution complete!</p>
+                            <p className="text-[10px] text-nord4/60 mt-0.5">
+                                <strong>{redistResult.redistributedCount}</strong> missed questions spread across&nbsp;
+                                <strong>{redistResult.daysUsed}</strong> upcoming days (4 per day).
+                                Check your calendar to see them.
+                            </p>
+                        </div>
+                    </div>
+                )}
+                {redistResult && redistResult.redistributedCount === 0 && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-nord14/10 border border-nord14/25 animate-fade-in-up">
+                        <Check size={14} className="text-nord14" />
+                        <p className="text-xs text-nord14 font-semibold">No missed problems found — you&apos;re all caught up! 🎉</p>
+                    </div>
+                )}
+
+                {/* Confirm / Action */}
+                {!showRedistConfirm ? (
+                    <button
+                        id="redistribute-problems-btn"
+                        onClick={() => { setShowRedistConfirm(true); setRedistResult(null); }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-nord8/15 text-nord8 border border-nord8/25 hover:bg-nord8/25 transition-all font-semibold text-sm"
+                    >
+                        <RefreshCw size={15} />
+                        Redistribute Missed Problems
+                    </button>
+                ) : (
+                    <div className="p-4 rounded-xl bg-nord8/8 border border-nord8/25 space-y-3 animate-fade-in-up">
+                        <p className="text-xs text-nord4/70 font-medium leading-relaxed">
+                            This will <strong>overwrite any previous redistribution</strong> and re-queue all currently unsolved past questions onto your upcoming days. Your solved questions stay intact.
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                id="redistribute-confirm-btn"
+                                onClick={handleRedistribute}
+                                disabled={redistLoading}
+                                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-nord8 text-nord0 font-bold text-sm disabled:opacity-60 transition-all hover:opacity-90"
+                            >
+                                {redistLoading
+                                    ? <><RefreshCw size={14} className="animate-spin" /> Redistributing...</>
+                                    : <><Check size={14} /> Yes, Redistribute</>}
+                            </button>
+                            <button
+                                onClick={() => setShowRedistConfirm(false)}
+                                className="px-4 py-2 rounded-lg text-nord4/50 hover:text-nord4 hover:bg-nord0/50 transition-all"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Account Settings */}
             <div className="card-nord p-4 space-y-4">
                 <h3 className="text-sm font-bold text-nord11 flex items-center gap-1.5">
@@ -476,6 +624,76 @@ export default function AboutPage() {
                     </div>
                 )}
             </div>
+
+            {/* ── What's New / Version Changelog ── */}
+            <div className="card-nord p-4 space-y-3">
+                {/* Header row */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-nord15/15 flex items-center justify-center flex-shrink-0">
+                            <Sparkles size={15} className="text-nord15" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-nord5">What&apos;s New</h3>
+                            <p className="text-[10px] text-nord4/40 mt-0.5 font-mono">
+                                Current version: <span className="text-nord8">v{APP_VERSION}</span> · {BUILD_DATE}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        id="toggle-changelog-btn"
+                        onClick={() => setShowChangelog(v => !v)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-nord4/50 border border-nord3/20 hover:border-nord15/30 hover:text-nord15 transition-all"
+                    >
+                        {showChangelog ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        {showChangelog ? 'Hide' : 'Show all'}
+                    </button>
+                </div>
+
+                {/* Always show the latest entry */}
+                {CHANGELOG.slice(0, showChangelog ? CHANGELOG.length : 1).map((entry, eIdx) => {
+                    const labelStyle = LABEL_STYLES[entry.label];
+                    return (
+                        <div
+                            key={entry.version}
+                            className={`rounded-xl border p-3 space-y-2 transition-all ${
+                                eIdx === 0
+                                    ? 'bg-nord15/5 border-nord15/20'
+                                    : 'bg-nord2/20 border-nord3/15'
+                            }`}
+                        >
+                            {/* Version row */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs font-bold text-nord6">v{entry.version}</span>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${labelStyle.bg} ${labelStyle.text} ${labelStyle.border} uppercase tracking-wider`}>
+                                    {entry.label}
+                                </span>
+                                <span className="text-[9px] text-nord4/30 font-mono">{entry.date}</span>
+                                <span className="text-xs text-nord4/60 font-medium ml-auto">{entry.title}</span>
+                            </div>
+
+                            {/* Change list */}
+                            <ul className="space-y-1">
+                                {entry.changes.map((c, cIdx) => {
+                                    const ts = CHANGE_TYPE_STYLES[c.type] || { dot: 'bg-nord4', label: c.type };
+                                    return (
+                                        <li key={cIdx} className="flex items-start gap-2">
+                                            <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${ts.dot}`} />
+                                            <span className="text-[10px] text-nord4/60 leading-relaxed">
+                                                <span className={`font-bold text-[9px] uppercase mr-1 ${ts.dot.replace('bg-', 'text-')}`}>
+                                                    {ts.label}
+                                                </span>
+                                                {c.text}
+                                            </span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
+
     );
 }

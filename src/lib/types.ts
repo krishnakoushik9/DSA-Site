@@ -72,6 +72,11 @@ export interface UserProgress {
     isPremium: boolean;    // unlocked via credits
     premiumPlan?: 'placement' | 'monthly' | null; // which plan was purchased
     premiumExpiresAt?: string | null; // ISO date or null for lifetime
+    // ── Missed question redistribution ──
+    // Maps dateKey (YYYY-MM-DD) -> array of question IDs to show as catch-up tasks
+    redistribution?: Record<string, string[]>;
+    // ISO timestamp of last redistribution so UI can show "last redistributed"
+    lastRedistributedAt?: string | null;
 }
 
 export const DSA_TOPICS = [

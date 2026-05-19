@@ -24,6 +24,7 @@ import {
     LANGUAGE_MAP,
     LANGUAGE_TEMPLATES,
 } from '@/services/judge0RunnerAPI';
+import FullPageLoader from './FullPageLoader';
 import { useAppStore } from '@/store/useAppStore';
 import { saveCodeToHistory, loadCodeHistory, SavedCode } from '@/lib/firebase';
 import { toast } from 'react-hot-toast'; // Assuming react-hot-toast is available based on professional aesthetic
@@ -58,6 +59,7 @@ export default function RunnerIDE() {
     const [statusDescription, setStatusDescription] = useState('');
     const [showDevPopup, setShowDevPopup] = useState(true);
     const [hasRun, setHasRun] = useState(false);
+    const [showFullLoader, setShowFullLoader] = useState(false);
 
     // AI Test Case state
     const [isGeneratingTests, setIsGeneratingTests] = useState(false);
@@ -204,151 +206,163 @@ export default function RunnerIDE() {
         if (isRunning || isGeneratingTests) return;
 
         setIsRunning(true);
-        setHasRun(true);
-        setOutput('');
-        setIsSuccess(null);
-        setExecutionTime(null);
-        setMemory(null);
-        setStatusDescription('');
-        setTestCases([]);
+        setShowFullLoader(true);
+        const startTime = Date.now();
 
-        const languageId = LANGUAGE_MAP[language];
-
-        // If custom input explicitly provided, run as sandbox once
-        if (customInput.trim()) {
-            try {
-                const result = await executeCode(code, languageId, customInput);
-
-                setOutput(result.output);
-                setIsSuccess(result.success);
-                setExecutionTime(result.executionTime);
-                setMemory(result.memory);
-                setStatusDescription(result.statusDescription);
-
-                runCountRef.current += 1;
-                const entry: RunHistoryEntry = {
-                    id: runCountRef.current,
-                    language,
-                    status: result.statusDescription,
-                    success: result.success,
-                    time: result.executionTime,
-                    timestamp: new Date(),
-                };
-                setRunHistory((prev) => [entry, ...prev].slice(0, 5));
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-                setOutput(`Connection Error:\n${errorMessage}\n\nPlease check if the execution server is running.`);
-                setIsSuccess(false);
-                setStatusDescription('Connection Error');
-            } finally {
-                setIsRunning(false);
-            }
-            return;
-        }
-
-        // AI Testing Mode
-        setIsGeneratingTests(true);
-        setStatusDescription('Generating AI Test Cases...');
         try {
-            const res = await fetch('/api/generate-testcases', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, language })
-            });
+            setHasRun(true);
+            setOutput('');
+            setIsSuccess(null);
+            setExecutionTime(null);
+            setMemory(null);
+            setStatusDescription('');
+            setTestCases([]);
 
-            if (!res.ok) {
-                if (res.status === 429) throw new Error('RESOURCE_EXHAUSTED');
-                throw new Error('Failed to generate test cases');
-            }
-            const data = await res.json();
+            const languageId = LANGUAGE_MAP[language];
 
-            if (data.error === 'RESOURCE_EXHAUSTED') throw new Error('RESOURCE_EXHAUSTED');
-            if (data.error) throw new Error(data.error);
+            // If custom input explicitly provided, run as sandbox once
+            if (customInput.trim()) {
+                try {
+                    const result = await executeCode(code, languageId, customInput);
 
-            let aiCases: any[] = data.testCases;
-            if (!aiCases || aiCases.length === 0) {
-                throw new Error('STATIC_CODE');
-            }
+                    setOutput(result.output);
+                    setIsSuccess(result.success);
+                    setExecutionTime(result.executionTime);
+                    setMemory(result.memory);
+                    setStatusDescription(result.statusDescription);
 
-            // Limit to max 12
-            aiCases = aiCases.slice(0, 12).map((tc, idx) => ({ ...tc, id: idx + 1, status: 'pending' }));
-            setTestCases(aiCases as TestCase[]);
-            setStatusDescription('Executing Test Cases...');
-
-            let allPassed = true;
-            let totalTime = 0;
-            let maxMemory = 0;
-
-            for (let i = 0; i < aiCases.length; i++) {
-                setTestCases(prev => prev.map((tc, idx) => idx === i ? { ...tc, status: 'running' } : tc));
-                const tcResult = await executeCode(code, languageId, aiCases[i].input);
-
-                const passed = tcResult.success && (tcResult.output.trim() === String(aiCases[i].expectedOutput).trim());
-                if (!passed) allPassed = false;
-
-                totalTime += parseFloat(tcResult.executionTime || '0');
-                if ((tcResult.memory || 0) > maxMemory) maxMemory = tcResult.memory || 0;
-
-                setTestCases(prev => prev.map((tc, idx) => idx === i ? {
-                    ...tc,
-                    status: 'done',
-                    actualOutput: tcResult.output,
-                    passed,
-                    executionTime: tcResult.executionTime
-                } : tc));
+                    runCountRef.current += 1;
+                    const entry: RunHistoryEntry = {
+                        id: runCountRef.current,
+                        language,
+                        status: result.statusDescription,
+                        success: result.success,
+                        time: result.executionTime,
+                        timestamp: new Date(),
+                    };
+                    setRunHistory((prev) => [entry, ...prev].slice(0, 5));
+                } catch (err) {
+                    const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+                    setOutput(`Connection Error:\n${errorMessage}\n\nPlease check if the execution server is running.`);
+                    setIsSuccess(false);
+                    setStatusDescription('Connection Error');
+                }
+                return;
             }
 
-            setIsSuccess(allPassed);
-            setStatusDescription(allPassed ? 'All Test Cases Passed!' : 'Some Test Cases Failed');
-            setExecutionTime(totalTime.toFixed(3));
-            setMemory(maxMemory);
-
-            runCountRef.current += 1;
-            const entry: RunHistoryEntry = {
-                id: runCountRef.current,
-                language,
-                status: allPassed ? 'Accepted' : 'Failed Tests',
-                success: allPassed,
-                time: totalTime.toFixed(3),
-                timestamp: new Date(),
-            };
-            setRunHistory((prev) => [entry, ...prev].slice(0, 5));
-
-        } catch (err: any) {
-            // Silently revert to standard mode if static code or exhausted API limits
-            if (err.message !== 'STATIC_CODE' && err.message !== 'RESOURCE_EXHAUSTED') {
-                console.error(err);
-                setStatusDescription('Failed to generate dynamic tests. Running normally...');
-            } else {
-                setStatusDescription('');
-            }
-
+            // AI Testing Mode
+            setIsGeneratingTests(true);
+            setStatusDescription('Generating AI Test Cases...');
             try {
-                const result = await executeCode(code, languageId);
-                setOutput(result.output);
-                setIsSuccess(result.success);
-                setExecutionTime(result.executionTime);
-                setMemory(result.memory);
-                setStatusDescription(result.statusDescription);
+                const res = await fetch('/api/generate-testcases', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, language })
+                });
+
+                if (!res.ok) {
+                    if (res.status === 429) throw new Error('RESOURCE_EXHAUSTED');
+                    throw new Error('Failed to generate test cases');
+                }
+                const data = await res.json();
+
+                if (data.error === 'RESOURCE_EXHAUSTED') throw new Error('RESOURCE_EXHAUSTED');
+                if (data.error) throw new Error(data.error);
+
+                let aiCases: any[] = data.testCases;
+                if (!aiCases || aiCases.length === 0) {
+                    throw new Error('STATIC_CODE');
+                }
+
+                // Limit to max 12
+                aiCases = aiCases.slice(0, 12).map((tc, idx) => ({ ...tc, id: idx + 1, status: 'pending' }));
+                setTestCases(aiCases as TestCase[]);
+                setStatusDescription('Executing Test Cases...');
+
+                let allPassed = true;
+                let totalTime = 0;
+                let maxMemory = 0;
+
+                for (let i = 0; i < aiCases.length; i++) {
+                    setTestCases(prev => prev.map((tc, idx) => idx === i ? { ...tc, status: 'running' } : tc));
+                    const tcResult = await executeCode(code, languageId, aiCases[i].input);
+
+                    const passed = tcResult.success && (tcResult.output.trim() === String(aiCases[i].expectedOutput).trim());
+                    if (!passed) allPassed = false;
+
+                    totalTime += parseFloat(tcResult.executionTime || '0');
+                    if ((tcResult.memory || 0) > maxMemory) maxMemory = tcResult.memory || 0;
+
+                    setTestCases(prev => prev.map((tc, idx) => idx === i ? {
+                        ...tc,
+                        status: 'done',
+                        actualOutput: tcResult.output,
+                        passed,
+                        executionTime: tcResult.executionTime
+                    } : tc));
+                }
+
+                setIsSuccess(allPassed);
+                setStatusDescription(allPassed ? 'All Test Cases Passed!' : 'Some Test Cases Failed');
+                setExecutionTime(totalTime.toFixed(3));
+                setMemory(maxMemory);
 
                 runCountRef.current += 1;
                 const entry: RunHistoryEntry = {
                     id: runCountRef.current,
                     language,
-                    status: result.statusDescription,
-                    success: result.success,
-                    time: result.executionTime,
+                    status: allPassed ? 'Accepted' : 'Failed Tests',
+                    success: allPassed,
+                    time: totalTime.toFixed(3),
                     timestamp: new Date(),
                 };
                 setRunHistory((prev) => [entry, ...prev].slice(0, 5));
-            } catch (fallbackErr: any) {
-                setOutput(`Connection Error:\n${fallbackErr.message}\n\nPlease check if the execution server is running.`);
-                setIsSuccess(false);
-                setStatusDescription('Connection Error');
+
+            } catch (err: any) {
+                // Silently revert to standard mode if static code or exhausted API limits
+                if (err.message !== 'STATIC_CODE' && err.message !== 'RESOURCE_EXHAUSTED') {
+                    // console.warn instead of console.error to avoid breaking Next.js overlay in dev
+                    console.warn('AI Test Gen failed:', err.message);
+                    setStatusDescription('AI analysis skipped. Running standard...');
+                } else {
+                    setStatusDescription('');
+                }
+
+                try {
+                    const result = await executeCode(code, languageId);
+                    setOutput(result.output);
+                    setIsSuccess(result.success);
+                    setExecutionTime(result.executionTime);
+                    setMemory(result.memory);
+                    setStatusDescription(result.statusDescription);
+
+                    runCountRef.current += 1;
+                    const entry: RunHistoryEntry = {
+                        id: runCountRef.current,
+                        language,
+                        status: result.statusDescription,
+                        success: result.success,
+                        time: result.executionTime,
+                        timestamp: new Date(),
+                    };
+                    setRunHistory((prev) => [entry, ...prev].slice(0, 5));
+                } catch (fallbackErr: any) {
+                    setOutput(`Connection Error:\n${fallbackErr.message}\n\nPlease check if the execution server is running.`);
+                    setIsSuccess(false);
+                    setStatusDescription('Connection Error');
+                }
             }
         } finally {
             setIsGeneratingTests(false);
             setIsRunning(false);
+
+            // Ensure loader stays for at least 5 seconds
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, 5000 - elapsedTime);
+
+            setTimeout(() => {
+                setShowFullLoader(false);
+            }, remainingTime);
         }
     }, [code, language, isRunning, isGeneratingTests, customInput]);
 
@@ -479,6 +493,8 @@ export default function RunnerIDE() {
                     </div>
                 </div>
             )}
+
+            <FullPageLoader isVisible={showFullLoader} />
 
             {/* ── Main IDE Layout ── */}
             <div

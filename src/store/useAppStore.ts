@@ -4,9 +4,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { UserProgress, UserProfile, ExamSession } from '@/lib/types';
-import { formatDate } from '@/lib/scheduler';
+import { formatDate, getDailyQuestions, STUDY_START_DATE } from '@/lib/scheduler';
 import { saveToFirestore, loadFromFirestore, getUserPasscodeHash, hashPasscode } from '@/lib/firebase';
 import { signInWithGitHub, type GitHubUserInfo } from '@/lib/firebaseAuth';
+import { addDays, differenceInDays } from 'date-fns';
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -64,6 +65,8 @@ interface AppState extends UserProgress {
     toggleDeepLearningProgress: (notebookId: string) => void;
     // Credit economy
     spendCredits: (amount: number, plan: 'placement' | 'monthly') => boolean;
+    // Redistribution
+    redistributeMissedProblems: () => { redistributedCount: number; daysUsed: number };
 
     // Sync
     syncToFirestore: () => Promise<void>;
@@ -88,6 +91,8 @@ const initialProgress: UserProgress = {
     isPremium: false,
     premiumPlan: null,
     premiumExpiresAt: null,
+    redistribution: {},
+    lastRedistributedAt: null,
 };
 
 let syncTimeout: NodeJS.Timeout | undefined;
@@ -162,6 +167,8 @@ export const useAppStore = create<AppState>()(
                                 isPremium: (cloudData.isPremium as boolean) || false,
                                 premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
                                 premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
+                                redistribution: (cloudData.redistribution as Record<string, string[]>) || {},
+                                lastRedistributedAt: (cloudData.lastRedistributedAt as string) || null,
                             });
                         } else {
                             set({ ...initialProgress, username, passcodeHash: hash, isLoggedIn: true, _cloudReady: true, syncStatus: 'idle' });
@@ -303,6 +310,8 @@ export const useAppStore = create<AppState>()(
                             isPremium: (cloudData.isPremium as boolean) || false,
                             premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
                             premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
+                            redistribution: (cloudData.redistribution as Record<string, string[]>) || {},
+                            lastRedistributedAt: (cloudData.lastRedistributedAt as string) || null,
                         });
 
                         // Ensure githubUid is saved to the document
@@ -468,6 +477,8 @@ export const useAppStore = create<AppState>()(
                         isPremium: (cloudData.isPremium as boolean) || false,
                         premiumPlan: (cloudData.premiumPlan as UserProgress['premiumPlan']) || null,
                         premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
+                        redistribution: (cloudData.redistribution as Record<string, string[]>) || {},
+                        lastRedistributedAt: (cloudData.lastRedistributedAt as string) || null,
                     });
                 } else {
                     set({ syncStatus: 'idle', _cloudReady: true });
@@ -635,7 +646,73 @@ export const useAppStore = create<AppState>()(
                 scheduleFirestoreSync(get);
                 return true;
             },
+
+            // =============== REDISTRIBUTE MISSED PROBLEMS ===============
+            redistributeMissedProblems: () => {
+                const state = get();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // ── Step 1: Collect every unsolved question from all past days ──
+                // Walk from study start to yesterday, gather question IDs not in completedQuestions.
+                // Use a Set to avoid duplicates (same Q can appear on multiple days via modulo rotation).
+                const missedIds = new Set<string>();
+                const start = new Date(STUDY_START_DATE);
+                start.setHours(0, 0, 0, 0);
+                const totalPastDays = differenceInDays(today, start); // excludes today
+
+                for (let d = 0; d < totalPastDays; d++) {
+                    const cursor = addDays(start, d);
+                    const qs = getDailyQuestions(cursor, []);
+                    for (const q of qs) {
+                        if (!state.completedQuestions.includes(q.id)) {
+                            missedIds.add(q.id);
+                        }
+                    }
+                }
+
+                // Also carry over any previously redistributed questions that are still unsolved
+                const prevRedist = state.redistribution || {};
+                for (const ids of Object.values(prevRedist)) {
+                    for (const id of ids) {
+                        if (!state.completedQuestions.includes(id)) {
+                            missedIds.add(id);
+                        }
+                    }
+                }
+
+                const missedArr = Array.from(missedIds);
+                if (missedArr.length === 0) {
+                    return { redistributedCount: 0, daysUsed: 0 };
+                }
+
+                // ── Step 2: Spread them across future days starting tomorrow ──
+                // Each catch-up day gets CHUNK_SIZE questions (matches daily Medium count).
+                const CHUNK_SIZE = 4;
+                const newRedistribution: Record<string, string[]> = {};
+                let dayOffset = 1; // start from tomorrow
+
+                for (let i = 0; i < missedArr.length; i += CHUNK_SIZE) {
+                    const chunk = missedArr.slice(i, i + CHUNK_SIZE);
+                    const targetDate = addDays(today, dayOffset);
+                    const dateKey = formatDate(targetDate);
+                    newRedistribution[dateKey] = chunk;
+                    dayOffset++;
+                }
+
+                const daysUsed = Object.keys(newRedistribution).length;
+                const now = new Date().toISOString();
+
+                set({
+                    redistribution: newRedistribution,
+                    lastRedistributedAt: now,
+                });
+                scheduleFirestoreSync(get);
+
+                return { redistributedCount: missedArr.length, daysUsed };
+            },
         }),
+
         {
             name: 'dsa-tracker-storage',
             storage: createJSONStorage(() => localStorage),
@@ -667,6 +744,8 @@ function buildSyncData(state: AppState): Record<string, unknown> {
         isPremium: state.isPremium ?? false,
         premiumPlan: state.premiumPlan ?? null,
         premiumExpiresAt: state.premiumExpiresAt ?? null,
+        redistribution: state.redistribution || {},
+        lastRedistributedAt: state.lastRedistributedAt ?? null,
         // excalidrawData stays local
     };
 }
