@@ -466,9 +466,11 @@ export default function AboutPage() {
                     </div>
                     <div className="rounded-lg bg-nord2/30 border border-nord3/15 p-3 text-center">
                         <p className="text-lg font-bold text-nord8">
-                            {Object.keys(redistribution || {}).length}
+                            {Object.entries(redistribution || {}).filter(([, ids]) =>
+                                ids.some(id => !completedQuestions.includes(id))
+                            ).length}
                         </p>
-                        <p className="text-[9px] text-nord4/40 mt-0.5">Catch-up days queued</p>
+                        <p className="text-[9px] text-nord4/40 mt-0.5">Catch-up days remaining</p>
                     </div>
                 </div>
 
