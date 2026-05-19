@@ -57,7 +57,8 @@ export default function CalendarPage() {
     const [mounted, setMounted] = useState(false);
     const [contests, setContests] = useState<Contest[]>([]);
 
-    const { completedQuestions, toggleQuestionComplete, redistribution } = useAppStore();
+    const { completedQuestions, toggleQuestionComplete, redistribution, lastRedistributedAt } = useAppStore();
+    const hasRedistributed = !!lastRedistributedAt;
 
     useEffect(() => {
         setMounted(true);
@@ -104,21 +105,29 @@ export default function CalendarPage() {
         const allDone = dailyQs.every(q => completedQuestions.includes(q.id));
         const someDone = dailyQs.some(q => completedQuestions.includes(q.id));
         if (allDone) return 'complete';
+
+        // After redistribution, past scheduler-only days are "closed" — not red
+        if (past && hasRedistributed) return 'closed';
+
         if (past && someDone && !allDone) return 'missed-partial';
         if (past && !someDone) return 'missed';
         if (exam) return 'exam';
         if (someDone) return 'partial';
         return 'pending';
-    }, [completedQuestions, redistribution]);
+    }, [completedQuestions, redistribution, hasRedistributed]);
 
-    // Calculate lag: total uncompleted questions from all past non-complete days up to (not including) today
+    // Calculate lag: after redistribution, count only pending catch-up Qs; otherwise old behaviour
     const lagCount = (() => {
+        if (hasRedistributed) {
+            // Only count unsolved catch-up questions from redistribution
+            return Object.values(redistribution || {}).flat()
+                .filter(id => !completedQuestions.includes(id)).length;
+        }
         const today = new Date();
         let lag = 0;
-        // Go back from yesterday up to study start
-        const start = new Date(2026, 1, 25); // STUDY_START_DATE Feb 25 2026
+        const start = new Date(2026, 1, 25);
         const cursor = new Date(today);
-        cursor.setDate(cursor.getDate() - 1); // start from yesterday
+        cursor.setDate(cursor.getDate() - 1);
         while (cursor >= start) {
             const qs = getDailyQuestions(cursor, completedQuestions);
             if (qs.length > 0) {
@@ -204,6 +213,7 @@ export default function CalendarPage() {
                             const diffStyle = DIFF_COLORS[diff] || { dot: '', text: '' };
                             const dayContests = contests.filter(c => isSameDay(new Date(c.startTime), date));
                             const isMissed = isCurrentMonth && (status === 'missed' || status === 'missed-partial');
+                            const isClosed = status === 'closed';
                             const dateKey = formatDate(date);
                             const hasCatchUp = isCurrentMonth && !!(redistribution || {})[dateKey]?.length;
 
@@ -216,6 +226,7 @@ export default function CalendarPage() {
                                         ${selected ? 'bg-nord8/10 ring-1 ring-inset ring-nord8/30' : ''}
                                         ${today ? 'bg-nord8/5' : ''}
                                         ${isMissed ? 'missed-day-glow' : ''}
+                                        ${isClosed ? 'opacity-40' : ''}
                                     `}
                                     style={isMissed ? {
                                         animation: 'missed-pulse 2.5s ease-in-out infinite',
@@ -228,7 +239,8 @@ export default function CalendarPage() {
                                     <div className="flex items-center justify-between w-full">
                                         <span className={`text-sm font-semibold leading-none ${today ? 'text-nord8' :
                                             isMissed ? 'text-nord11/80' :
-                                                !isCurrentMonth ? 'text-nord3' : 'text-nord4'
+                                                isClosed ? 'text-nord4/40' :
+                                                    !isCurrentMonth ? 'text-nord3' : 'text-nord4'
                                             }`}>
                                             {date.getDate()}
                                         </span>
@@ -239,19 +251,19 @@ export default function CalendarPage() {
                                         )}
                                     </div>
 
-                                    {/* Lag badge — only on today */}
+                                    {/* Lag badge — only on today; after redistribution shows catch-up remaining */}
                                     {today && lagCount > 0 && (
                                         <div
                                             className="absolute bottom-1 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded"
                                             style={{
-                                                background: 'rgba(191,97,106,0.18)',
-                                                border: '1px solid rgba(191,97,106,0.4)',
-                                                boxShadow: '0 0 6px rgba(191,97,106,0.3)',
+                                                background: hasRedistributed ? 'rgba(136,192,208,0.18)' : 'rgba(191,97,106,0.18)',
+                                                border: `1px solid ${hasRedistributed ? 'rgba(136,192,208,0.4)' : 'rgba(191,97,106,0.4)'}`,
+                                                boxShadow: `0 0 6px ${hasRedistributed ? 'rgba(136,192,208,0.3)' : 'rgba(191,97,106,0.3)'}`,
                                             }}
-                                            title={`${lagCount} questions behind schedule`}
+                                            title={hasRedistributed ? `${lagCount} catch-up questions remaining` : `${lagCount} questions behind schedule`}
                                         >
-                                            <span className="text-[7px] font-bold" style={{ color: '#bf616a' }}>
-                                                -{lagCount}
+                                            <span className="text-[7px] font-bold" style={{ color: hasRedistributed ? '#88C0D0' : '#bf616a' }}>
+                                                {hasRedistributed ? `↺${lagCount}` : `-${lagCount}`}
                                             </span>
                                         </div>
                                     )}

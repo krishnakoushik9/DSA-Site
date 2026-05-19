@@ -3,7 +3,7 @@
 // Bump APP_VERSION here + add a CHANGELOG entry on every release.
 // ============================================================
 
-export const APP_VERSION = '1.3.1';
+export const APP_VERSION = '1.3.2';
 export const BUILD_DATE = '2026-05-20';
 
 export interface ChangelogEntry {
@@ -15,6 +15,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+    {
+        version: '1.3.2',
+        date: '2026-05-20',
+        label: 'patch',
+        title: 'Calendar Cleanup After Redistribution',
+        changes: [
+            { type: 'fix', text: 'Past scheduler days no longer show red after redistribution — they appear faded/closed instead.' },
+            { type: 'fix', text: 'Lag counter now shows only pending catch-up questions (blue badge) instead of old backlog.' },
+            { type: 'feat', text: 'New "closed" status for past days — 40% opacity, neutral text, no red glow or animation.' },
+        ],
+    },
     {
         version: '1.3.1',
         date: '2026-05-20',
