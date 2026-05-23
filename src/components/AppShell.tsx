@@ -12,14 +12,18 @@ import PremiumPopup from '@/components/PremiumPopup';
 import LearnAIPopup from '@/components/LearnAIPopup';
 import MobileBlockedScreen from '@/components/MobileBlockedScreen';
 import { isMobile as checkIsMobile } from '@/utils/isMobile';
+import { checkDeviceBypass } from '@/utils/allowlist';
 import { useEffect, useState } from 'react';
 import RetroThemeOverride from '@/components/RetroThemeOverride';
+import { ShieldAlert, X } from 'lucide-react';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isLoggedIn } = useAppStore();
     const [mounted, setMounted] = useState(false);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
+    const [isBypassed, setIsBypassed] = useState(false);
+    const [showBanner, setShowBanner] = useState(true);
 
     useEffect(() => {
         // 1. Device Detection
@@ -28,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         };
 
         handleResize(); // Initial check
+        setIsBypassed(checkDeviceBypass());
         window.addEventListener('resize', handleResize);
 
         return () => window.removeEventListener('resize', handleResize);
@@ -112,6 +117,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         <SyncIndicator />
                     </div>
                     <div className="w-full max-w-[1400px] mx-auto p-6 lg:p-8 overflow-hidden">
+                        {isBypassed && showBanner && (
+                            <div className="mb-6 p-4 rounded-xl bg-nord12/10 border border-nord12/30 flex items-center justify-between gap-3 text-nord12 text-sm font-medium animate-fade-in-up backdrop-blur-md">
+                                <div className="flex items-center gap-2">
+                                    <ShieldAlert className="h-5 w-5 shrink-0 text-nord12" />
+                                    <span>Mobile experience is experimental and not fully optimized.</span>
+                                </div>
+                                <button
+                                    onClick={() => setShowBanner(false)}
+                                    className="p-1 hover:bg-nord12/20 rounded-lg transition-colors cursor-pointer text-nord12/80 hover:text-nord12 flex items-center justify-center"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
                         {children}
                     </div>
                 </main>
