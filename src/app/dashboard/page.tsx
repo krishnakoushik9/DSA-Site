@@ -87,7 +87,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid — Bento Box */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" data-tour="dashboard-progress">
         {/* Rating Card */}
         <div className="card-nord p-4 lg:col-span-2 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-nord8/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />

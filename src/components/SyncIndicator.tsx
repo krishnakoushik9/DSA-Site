@@ -45,6 +45,7 @@ export default function SyncIndicator() {
 
     return (
         <div
+            data-tour="sync-indicator"
             className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-500 ${config.glow}
         ${syncStatus === 'syncing' ? 'bg-nord1/90 border-nord8/30' :
                     syncStatus === 'synced' ? 'bg-nord1/90 border-nord14/30' :

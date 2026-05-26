@@ -50,6 +50,7 @@ export default function FloatingDock() {
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-fit max-w-[90vw]"
             role="navigation"
             aria-label="Main Navigation"
+            data-tour="floating-dock"
         >
             <motion.div
                 className="flex items-center gap-1.5 p-2 rounded-[20px] overflow-x-auto overflow-y-hidden hide-scrollbar"
@@ -76,6 +77,7 @@ export default function FloatingDock() {
                             href={item.href}
                             tabIndex={0}
                             className="outline-none"
+                            data-tour={`dock-${item.href.replace(/^\//, '').replace(/\//g, '-')}`}
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}
                             onFocus={() => setHoveredIndex(index)}

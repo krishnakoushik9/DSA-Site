@@ -68,6 +68,9 @@ interface AppState extends UserProgress {
     // Redistribution
     redistributeMissedProblems: () => { redistributedCount: number; daysUsed: number };
 
+    // Tour / onboarding
+    setTourCompleted: (tourId: string, version: number) => void;
+
     // Sync
     syncToFirestore: () => Promise<void>;
     loadFromCloud: () => Promise<void>;
@@ -93,6 +96,7 @@ const initialProgress: UserProgress = {
     premiumExpiresAt: null,
     redistribution: {},
     lastRedistributedAt: null,
+    completedTours: {},
 };
 
 let syncTimeout: NodeJS.Timeout | undefined;
@@ -479,6 +483,7 @@ export const useAppStore = create<AppState>()(
                         premiumExpiresAt: (cloudData.premiumExpiresAt as string) || null,
                         redistribution: (cloudData.redistribution as Record<string, string[]>) || {},
                         lastRedistributedAt: (cloudData.lastRedistributedAt as string) || null,
+                        completedTours: (cloudData.completedTours as Record<string, number>) || {},
                     });
                 } else {
                     set({ syncStatus: 'idle', _cloudReady: true });
@@ -711,6 +716,14 @@ export const useAppStore = create<AppState>()(
 
                 return { redistributedCount: missedArr.length, daysUsed };
             },
+
+            // =============== TOUR / ONBOARDING ===============
+            setTourCompleted: (tourId: string, version: number) => {
+                const current = get().completedTours ?? {};
+                if (current[tourId] === version) return;
+                set({ completedTours: { ...current, [tourId]: version } });
+                scheduleFirestoreSync(get);
+            },
         }),
 
         {
@@ -746,6 +759,7 @@ function buildSyncData(state: AppState): Record<string, unknown> {
         premiumExpiresAt: state.premiumExpiresAt ?? null,
         redistribution: state.redistribution || {},
         lastRedistributedAt: state.lastRedistributedAt ?? null,
+        completedTours: state.completedTours || {},
         // excalidrawData stays local
     };
 }

@@ -77,6 +77,9 @@ export interface UserProgress {
     redistribution?: Record<string, string[]>;
     // ISO timestamp of last redistribution so UI can show "last redistributed"
     lastRedistributedAt?: string | null;
+    // ── Tour / onboarding completion ──
+    // Maps tourId -> highest version completed. Re-trigger when current version > stored version.
+    completedTours?: Record<string, number>;
 }
 
 export const DSA_TOPICS = [

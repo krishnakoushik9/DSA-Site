@@ -16,6 +16,10 @@ import { checkDeviceBypass } from '@/utils/allowlist';
 import { useEffect, useState } from 'react';
 import RetroThemeOverride from '@/components/RetroThemeOverride';
 import { ShieldAlert, X } from 'lucide-react';
+import { GuideProvider } from '@/components/tour/GuideProvider';
+import { onboardingTour } from '@/components/tour/steps';
+import TourHelpButton from '@/components/tour/TourHelpButton';
+import TourAutoStarter from '@/components/tour/TourAutoStarter';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -107,36 +111,40 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <AuthGuard>
             <RetroThemeOverride />
-            <div className="flex min-h-screen relative overflow-hidden">
-                <main className="flex-1 w-full transition-all duration-300 relative min-w-0 overflow-hidden pb-[120px]">
-                    <div className="absolute top-2 right-2 lg:right-4 z-50">
-                        <ThemeToggle />
-                    </div>
-                    <div className="absolute top-6 right-16 lg:right-20 z-40 flex items-center gap-2">
-                        <NotificationBell />
-                        <SyncIndicator />
-                    </div>
-                    <div className="w-full max-w-[1400px] mx-auto p-6 lg:p-8 overflow-hidden">
-                        {isBypassed && showBanner && (
-                            <div className="mb-6 p-4 rounded-xl bg-nord12/10 border border-nord12/30 flex items-center justify-between gap-3 text-nord12 text-sm font-medium animate-fade-in-up backdrop-blur-md">
-                                <div className="flex items-center gap-2">
-                                    <ShieldAlert className="h-5 w-5 shrink-0 text-nord12" />
-                                    <span>Mobile experience is experimental and not fully optimized.</span>
+            <GuideProvider tours={[onboardingTour]}>
+                <div className="flex min-h-screen relative overflow-hidden">
+                    <main className="flex-1 w-full transition-all duration-300 relative min-w-0 overflow-hidden pb-[120px]">
+                        <div className="absolute top-2 right-2 lg:right-4 z-50">
+                            <ThemeToggle />
+                        </div>
+                        <div className="absolute top-6 right-16 lg:right-20 z-40 flex items-center gap-2">
+                            <NotificationBell />
+                            <SyncIndicator />
+                        </div>
+                        <div className="w-full max-w-[1400px] mx-auto p-6 lg:p-8 overflow-hidden">
+                            {isBypassed && showBanner && (
+                                <div className="mb-6 p-4 rounded-xl bg-nord12/10 border border-nord12/30 flex items-center justify-between gap-3 text-nord12 text-sm font-medium animate-fade-in-up backdrop-blur-md">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldAlert className="h-5 w-5 shrink-0 text-nord12" />
+                                        <span>Mobile experience is experimental and not fully optimized.</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowBanner(false)}
+                                        className="p-1 hover:bg-nord12/20 rounded-lg transition-colors cursor-pointer text-nord12/80 hover:text-nord12 flex items-center justify-center"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setShowBanner(false)}
-                                    className="p-1 hover:bg-nord12/20 rounded-lg transition-colors cursor-pointer text-nord12/80 hover:text-nord12 flex items-center justify-center"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                        )}
-                        {children}
-                    </div>
-                </main>
-                {!isRunnerPage && <PomodoroWidget />}
-                <FloatingDock />
-            </div>
+                            )}
+                            {children}
+                        </div>
+                    </main>
+                    {!isRunnerPage && <PomodoroWidget />}
+                    <FloatingDock />
+                </div>
+                <TourHelpButton />
+                <TourAutoStarter />
+            </GuideProvider>
             <PremiumPopup />
             <LearnAIPopup />
         </AuthGuard>

@@ -84,7 +84,7 @@ export default function ThemeToggle() {
     };
 
     return (
-        <div className="relative" ref={ref}>
+        <div className="relative" ref={ref} data-tour="theme-toggle">
             <button
                 onClick={() => { if (!installingTarget) setOpen(!open); }}
                 className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 relative group"

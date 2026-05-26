@@ -89,7 +89,7 @@ export default function NotificationBell() {
     if (!isLoggedIn) return null;
 
     return (
-        <div className="relative" ref={panelRef}>
+        <div className="relative" ref={panelRef} data-tour="notification-bell">
             {/* Bell Button */}
             <button
                 onClick={handleOpen}
