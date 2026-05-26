@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
+import { useTour } from '@/components/tour/useTour';
 import { loadCodeHistory, SavedCode } from '@/lib/firebase';
 import { getAllQuestions, getTopicProgress, DSA_TOPICS_ORDERED } from '@/lib/scheduler';
 import ProgressRing from '@/components/ProgressRing';
@@ -57,6 +58,8 @@ export default function AboutPage() {
     } = useAppStore();
 
     const router = useRouter();
+    const { start } = useTour();
+
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState(profile);
     const [mounted, setMounted] = useState(false);
@@ -538,6 +541,29 @@ export default function AboutPage() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* ── Help & Onboarding ── */}
+            <div className="card-nord p-4 space-y-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-nord8/15 flex items-center justify-center flex-shrink-0">
+                        <Info size={16} className="text-nord8" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-nord5">Help & Onboarding</h3>
+                        <p className="text-[10px] text-nord4/40 mt-0.5">
+                            New here? Take a quick tour to learn how to use the tracker.
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => start('onboarding')}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-nord8/10 text-nord8 border border-nord8/20 hover:bg-nord8/20 transition-all font-semibold text-sm"
+                >
+                    <Sparkles size={15} />
+                    Start Guided Tour
+                </button>
             </div>
 
             {/* Account Settings */}

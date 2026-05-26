@@ -3,8 +3,8 @@
 // Bump APP_VERSION here + add a CHANGELOG entry on every release.
 // ============================================================
 
-export const APP_VERSION = '1.3.2';
-export const BUILD_DATE = '2026-05-20';
+export const APP_VERSION = '1.3.4';
+export const BUILD_DATE = '2026-05-26';
 
 export interface ChangelogEntry {
     version: string;
@@ -15,6 +15,17 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+    {
+        version: '1.3.4',
+        date: '2026-05-26',
+        label: 'minor',
+        title: 'Interactive Onboarding & UX',
+        changes: [
+            { type: 'feat', text: 'Interactive Onboarding Guide: Step-by-step walkthrough for new users to explore key features.' },
+            { type: 'feat', text: 'Enhanced AppShell with improved navigation and mobile responsiveness.' },
+            { type: 'feat', text: 'Added Quick-start help button in the floating dock to restart the tour anytime.' },
+        ],
+    },
     {
         version: '1.3.2',
         date: '2026-05-20',
