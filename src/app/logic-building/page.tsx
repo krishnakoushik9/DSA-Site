@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Folder, FileCode, Search, ArrowLeft } from 'lucide-react';
-import LogicBuildingIDE from '@/components/LogicBuildingIDE';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Zap, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import MDEditor from '@uiw/react-md-editor';
+
+// Modular Components
+import WorkspaceLayout from '@/components/logic-building/WorkspaceLayout';
+import Sidebar from '@/components/logic-building/Sidebar';
+import ProblemViewer from '@/components/logic-building/ProblemViewer';
+import EditorPanel from '@/components/logic-building/EditorPanel';
+import ConsolePanel from '@/components/logic-building/ConsolePanel';
+import Taskbar from '@/components/logic-building/Taskbar';
 
 interface GithubNode {
     path: string;
@@ -15,16 +22,30 @@ interface GithubNode {
     url: string;
 }
 
+interface Log {
+    type: 'info' | 'error' | 'success' | 'warning';
+    message: string;
+    timestamp: string;
+}
+
 export default function LogicBuildingPage() {
-    const { logicBuildingCodes, saveLogicBuildingCode } = useAppStore();
+    const { logicBuildingCodes, saveLogicBuildingCode, completedQuestions } = useAppStore();
     const [mounted, setMounted] = useState(false);
 
+    // Data State
     const [files, setFiles] = useState<GithubNode[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [selectedFile, setSelectedFile] = useState<GithubNode | null>(null);
     const [fileContent, setFileContent] = useState<string>('');
     const [loadingContent, setLoadingContent] = useState(false);
+    const [currentCode, setCurrentCode] = useState('');
+
+    // UI State
+    const [isSidebarVisible, setSidebarVisible] = useState(true);
+    const [isConsoleVisible, setConsoleVisible] = useState(false);
+    const [currentMode, setMode] = useState<'zen' | 'focus' | 'normal'>('normal');
+    const [logs, setLogs] = useState<Log[]>([]);
+    const [isExecuting, setIsExecuting] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -37,12 +58,12 @@ export default function LogicBuildingPage() {
             const res = await fetch('https://api.github.com/repos/Upendhar10/LogicBuilding101/git/trees/main?recursive=1');
             const data = await res.json();
             if (data.tree) {
-                // Filter only files (blobs), ideally java or md files inside DAY folders
                 const javaFiles = data.tree.filter((node: GithubNode) => node.type === 'blob' && node.path.includes('DAY'));
                 setFiles(javaFiles);
             }
         } catch (e) {
             console.error("Failed to fetch repo", e);
+            addLog('error', 'Failed to connect to the Logic Arena. Check your connection.');
         } finally {
             setLoading(false);
         }
@@ -51,23 +72,77 @@ export default function LogicBuildingPage() {
     const fetchContent = async (node: GithubNode) => {
         setSelectedFile(node);
         setLoadingContent(true);
+        addLog('info', `Initializing environment for: ${node.path.split('/').pop()}`);
+        
         try {
             const res = await fetch(`https://raw.githubusercontent.com/Upendhar10/LogicBuilding101/main/${node.path}`);
             const text = await res.text();
             setFileContent(text);
+            
+            // Load saved code or default
+            const savedCode = (logicBuildingCodes || {})[node.path];
+            setCurrentCode(savedCode || 'public class Main {\n    public static void main(String[] args) {\n        // Your logic here\n    }\n}');
+            
+            addLog('success', 'Workspace ready.');
         } catch (e) {
             console.error("Failed to fetch content", e);
+            addLog('error', 'Failed to load problem content.');
         } finally {
             setLoadingContent(false);
         }
     };
 
+    const addLog = (type: Log['type'], message: string) => {
+        setLogs(prev => [...prev, {
+            type,
+            message,
+            timestamp: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        }]);
+        setConsoleVisible(true);
+    };
+
+    const handleRun = () => {
+        setIsExecuting(true);
+        addLog('info', 'Compiling source code...');
+        
+        setTimeout(() => {
+            addLog('success', 'Build successful. Running tests...');
+            setTimeout(() => {
+                addLog('info', 'Output: Hello World!');
+                addLog('warning', 'Memory usage: 42MB');
+                setIsExecuting(false);
+            }, 1000);
+        }, 800);
+    };
+
+    const handleSubmit = () => {
+        if (!selectedFile) return;
+        setIsExecuting(true);
+        addLog('info', 'Submitting solution to judge...');
+        
+        setTimeout(() => {
+            saveLogicBuildingCode(selectedFile.path, currentCode);
+            addLog('success', 'Solution Accepted! Code persisted to cloud.');
+            setIsExecuting(false);
+            
+            // Trigger cinematic success
+            const audio = new Audio('/audio/mixkit-game-success-alert-2039.wav');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        }, 1500);
+    };
+
+    const handleReset = () => {
+        if (confirm('Reset your code to default? This cannot be undone.')) {
+            setCurrentCode('public class Main {\n    public static void main(String[] args) {\n        // Your logic here\n    }\n}');
+            addLog('warning', 'Code reset to template.');
+        }
+    };
+
     if (!mounted) return null;
 
-    const filteredFiles = files.filter(f => f.path.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    // Organize into folders by grouping paths
-    const folders = filteredFiles.reduce((acc, file) => {
+    // Organize files into folders
+    const folders = files.reduce((acc, file) => {
         const parts = file.path.split('/');
         const folderName = parts[0];
         if (!acc[folderName]) acc[folderName] = [];
@@ -76,113 +151,164 @@ export default function LogicBuildingPage() {
     }, {} as Record<string, GithubNode[]>);
 
     return (
-        <div className="h-[calc(100vh-80px)] flex flex-col pt-4">
-            <div className="flex items-center gap-4 mb-6 px-2">
-                <Link href="/dashboard" className="p-2 bg-nord3/20 hover:bg-nord3/40 rounded-lg text-nord4 transition-colors">
-                    <ArrowLeft size={20} />
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold text-nord6 flex items-center gap-2">
-                        Logic Building 101
-                        <span className="px-2 py-0.5 bg-nord8/20 text-nord8 text-xs rounded-full border border-nord8/30">
-                            Arena Unlocked
-                        </span>
-                    </h1>
-                    <p className="text-nord4/60 text-sm">Practicing Upendhar10/LogicBuilding101</p>
+        <div className={`h-screen flex flex-col bg-nord0 text-nord4 selection:bg-nord8/30 overflow-hidden transition-all duration-700 ${
+            currentMode === 'zen' ? 'grayscale-[0.5] contrast-[1.1]' : ''
+        }`}>
+            {/* Minimal Header */}
+            <div className={`flex items-center justify-between px-6 py-3 border-b border-nord3/10 bg-nord1/30 backdrop-blur-md z-20 transition-all duration-500 ${
+                currentMode !== 'normal' ? '-translate-y-full opacity-0' : ''
+            }`}>
+                <div className="flex items-center gap-6">
+                    <Link href="/dashboard" className="p-2 hover:bg-nord3/20 rounded-xl text-nord4/60 hover:text-nord6 transition-all group">
+                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                    </Link>
+                    <div className="h-6 w-[1px] bg-nord3/20" />
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-sm font-bold text-nord6 tracking-tight flex items-center gap-2">
+                                <Zap size={14} className="text-nord8 fill-nord8" />
+                                Logic Building Arena
+                            </h1>
+                            <div className="px-2 py-0.5 bg-nord8/10 rounded-full border border-nord8/20">
+                                <span className="text-[9px] font-bold text-nord8 uppercase tracking-widest">v2.0 Beta</span>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-nord4/40 font-mono mt-0.5 uppercase tracking-tighter">Upendhar10 / LogicBuilding101</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-nord3/10 rounded-lg border border-nord3/20">
+                        <Sparkles size={12} className="text-nord13" />
+                        <span className="text-[10px] font-bold text-nord6">840 XP</span>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-nord8/20 border border-nord8/30 flex items-center justify-center text-nord8 text-xs font-bold">
+                        U
+                    </div>
                 </div>
             </div>
 
-            <div className="flex-1 flex gap-4 min-h-0">
-                {/* Left pane: File Explorer */}
-                <div className="w-[300px] flex-shrink-0 card-nord flex flex-col overflow-hidden shadow-xl border border-nord3/30">
-                    <div className="p-4 border-b border-nord3/20">
-                        <div className="relative">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-nord4/40" />
-                            <input
-                                type="text"
-                                placeholder="Search problems..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 bg-nord0 border border-nord3/30 rounded-lg text-sm text-nord5 placeholder:text-nord4/30 focus:outline-none focus:border-nord8 transition-colors"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-20 text-nord4/50 text-sm">
-                                Loading repository...
-                            </div>
-                        ) : (
-                            Object.keys(folders).sort().map(folder => (
-                                <div key={folder} className="mb-2">
-                                    <div className="flex items-center gap-2 px-2 py-1.5 text-nord8 font-medium text-sm">
-                                        <Folder size={14} />
-                                        {folder}
-                                    </div>
-                                    <div className="pl-4 space-y-0.5 mt-1">
-                                        {folders[folder].map(file => {
-                                            const filename = file.path.substring(folder.length + 1);
-                                            const isSelected = selectedFile?.sha === file.sha;
-                                            return (
-                                                <button
-                                                    key={file.sha}
-                                                    onClick={() => fetchContent(file)}
-                                                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-colors ${isSelected ? 'bg-nord3/40 text-nord6' : 'text-nord4/70 hover:bg-nord3/20 hover:text-nord5'
-                                                        }`}
-                                                >
-                                                    <FileCode size={12} className={isSelected ? 'text-nord8' : 'text-nord4/50'} />
-                                                    <span className="truncate">{filename}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Pane: IDE and Content */}
-                <div className="flex-1 flex flex-col gap-4 min-h-0">
+            {/* Workspace */}
+            <div className="flex-1 relative min-h-0">
+                <AnimatePresence mode="wait">
                     {selectedFile ? (
-                        <>
-                            <div className="h-1/3 card-nord p-4 overflow-y-auto shadow-xl border border-nord3/30">
-                                <h2 className="text-lg font-bold text-nord6 mb-3 flex items-center gap-2">
-                                    <FileCode size={18} className="text-nord8" />
-                                    {selectedFile.path.split('/').pop()}
-                                </h2>
-                                {loadingContent ? (
-                                    <div className="animate-pulse flex space-x-4">
-                                        <div className="flex-1 space-y-3 py-1">
-                                            <div className="h-2 bg-nord3/40 rounded w-3/4"></div>
-                                            <div className="h-2 bg-nord3/40 rounded"></div>
-                                            <div className="h-2 bg-nord3/40 rounded w-5/6"></div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div data-color-mode="dark" className="p-2 border border-nord3/30 rounded-lg bg-nord0">
-                                        <MDEditor.Markdown source={fileContent} style={{ backgroundColor: 'transparent' }} />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex-1 min-h-0">
-                                <LogicBuildingIDE
-                                    problemTitle={selectedFile.path}
-                                    initialCode={(logicBuildingCodes || {})[selectedFile.path] || 'public class Main {\n    public static void main(String[] args) {\n        // Write your logic here\n    }\n}'}
-                                    onSubmit={(code) => saveLogicBuildingCode(selectedFile.path, code)}
-                                />
-                            </div>
-                        </>
+                        <motion.div 
+                            key="arena"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="h-full"
+                        >
+                            <WorkspaceLayout
+                                isSidebarVisible={isSidebarVisible && currentMode === 'normal'}
+                                isConsoleVisible={isConsoleVisible && currentMode !== 'zen'}
+                                sidebar={
+                                    <Sidebar 
+                                        folders={folders}
+                                        selectedFile={selectedFile}
+                                        onSelectFile={fetchContent}
+                                        loading={loading}
+                                        completedFiles={completedQuestions}
+                                    />
+                                }
+                                problem={
+                                    <ProblemViewer 
+                                        title={selectedFile.path.split('/').pop() || ''}
+                                        content={fileContent}
+                                        loading={loadingContent}
+                                    />
+                                }
+                                editor={
+                                    <EditorPanel 
+                                        code={currentCode}
+                                        onChange={(val) => setCurrentCode(val || '')}
+                                        onRun={handleRun}
+                                        onSubmit={handleSubmit}
+                                        onReset={handleReset}
+                                        isExecuting={isExecuting}
+                                    />
+                                }
+                                console={
+                                    <ConsolePanel 
+                                        logs={logs}
+                                        onClear={() => setLogs([])}
+                                    />
+                                }
+                            />
+                        </motion.div>
                     ) : (
-                        <div className="flex-1 card-nord flex items-center justify-center shadow-xl border border-nord3/30">
-                            <div className="text-center text-nord4/50">
-                                <FileCode size={48} className="mx-auto mb-4 opacity-50" />
-                                <p>Select a problem from the explorer to begin.</p>
+                        <motion.div 
+                            key="selector"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="h-full flex flex-col"
+                        >
+                            <div className="flex-1 flex">
+                                <div className="w-[300px] border-r border-nord3/10 h-full">
+                                    <Sidebar 
+                                        folders={folders}
+                                        selectedFile={null}
+                                        onSelectFile={fetchContent}
+                                        loading={loading}
+                                        completedFiles={completedQuestions}
+                                    />
+                                </div>
+                                <div className="flex-1 flex flex-col items-center justify-center p-20 bg-nord0">
+                                    <motion.div 
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="text-center space-y-6 max-w-md"
+                                    >
+                                        <div className="w-24 h-24 bg-nord8/10 rounded-3xl border border-nord8/20 flex items-center justify-center mx-auto shadow-2xl shadow-nord8/10">
+                                            <Zap size={48} className="text-nord8" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-nord6 tracking-tight">Welcome to the Arena</h2>
+                                            <p className="text-nord4/50 text-sm mt-2 leading-relaxed">
+                                                Select a problem from the explorer to begin your logic building session. 
+                                                Every line of code brings you closer to mastery.
+                                            </p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 pt-4">
+                                            <div className="p-4 bg-nord1/50 rounded-2xl border border-nord3/10 text-left">
+                                                <h3 className="text-[10px] font-bold text-nord8 uppercase tracking-widest mb-1">Status</h3>
+                                                <p className="text-xs text-nord4/60">Ready for Execution</p>
+                                            </div>
+                                            <div className="p-4 bg-nord1/50 rounded-2xl border border-nord3/10 text-left">
+                                                <h3 className="text-[10px] font-bold text-nord14 uppercase tracking-widest mb-1">Goal</h3>
+                                                <p className="text-xs text-nord4/60">Solve 3 problems</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
-                </div>
+                </AnimatePresence>
             </div>
+
+            {/* Taskbar */}
+            <Taskbar 
+                isSidebarVisible={isSidebarVisible}
+                setSidebarVisible={setSidebarVisible}
+                isConsoleVisible={isConsoleVisible}
+                setConsoleVisible={setConsoleVisible}
+                currentMode={currentMode}
+                setMode={setMode}
+                onToggleNotes={() => {}}
+            />
+
+            {/* Zen Mode Ambient Effects */}
+            {currentMode === 'zen' && (
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="fixed inset-0 pointer-events-none z-[100] border-[24px] border-nord8/5"
+                >
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 text-[10px] font-mono text-nord8/30 uppercase tracking-[1em]">
+                        Deep Focus Active
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 }
