@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { motion } from 'framer-motion';
 
 interface WorkspaceLayoutProps {
@@ -23,7 +23,7 @@ export default function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
     return (
         <div className="h-full w-full flex flex-col bg-nord0 overflow-hidden relative">
-            <PanelGroup direction="horizontal">
+            <PanelGroup orientation="horizontal">
                 {isSidebarVisible && (
                     <>
                         <Panel defaultSize={20} minSize={15} maxSize={30}>
@@ -56,7 +56,7 @@ export default function WorkspaceLayout({
                 </PanelResizeHandle>
 
                 <Panel defaultSize={45} minSize={30}>
-                    <PanelGroup direction="vertical">
+                    <PanelGroup orientation="vertical">
                         <Panel defaultSize={isConsoleVisible ? 70 : 100} minSize={30}>
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
