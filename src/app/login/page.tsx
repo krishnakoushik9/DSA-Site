@@ -535,6 +535,9 @@ export default function LoginPage() {
         try {
             const result = await login(username, pin);
             if (result.success) {
+                if (result.isNew) {
+                    try { localStorage.setItem('dsa_week_celebration', '1'); } catch {}
+                }
                 router.push('/dashboard');
             } else {
                 const errMsg = result.error || 'Login failed';
@@ -556,7 +559,12 @@ export default function LoginPage() {
         setError('');
         try {
             const result = await loginWithGithub();
-            if (result.success) { router.push('/dashboard'); }
+            if (result.success) {
+                if (result.isNew) {
+                    try { localStorage.setItem('dsa_week_celebration', '1'); } catch {}
+                }
+                router.push('/dashboard');
+            }
             else { setError(result.error || 'GitHub sign-in failed.'); }
         } catch {
             setError('GitHub sign-in failed. Please try again.');

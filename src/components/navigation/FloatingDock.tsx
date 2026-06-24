@@ -17,6 +17,7 @@ import {
     Briefcase,
     BrainCircuit,
     Zap,
+    FileText,
 } from 'lucide-react';
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
     { href: '/perks', label: 'Perks', icon: Gift },
     { href: '/memes', label: 'Krack Updates', icon: Laugh },
     { href: '/learnings/learn-ai', label: 'Learnings', icon: BrainCircuit },
+    { href: 'https://resume-reality-check-seven.vercel.app/', label: 'Resume', icon: FileText, isExternal: true },
     { href: '/about', label: 'Profile', icon: User },
 ];
 
@@ -71,17 +73,22 @@ export default function FloatingDock() {
 
                     const Icon = item.icon;
 
+                    const linkProps = item.isExternal
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {};
+
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             tabIndex={0}
                             className="outline-none"
-                            data-tour={`dock-${item.href.replace(/^\//, '').replace(/\//g, '-')}`}
+                            data-tour={`dock-${item.isExternal ? 'resume' : item.href.replace(/^\//, '').replace(/\//g, '-')}`}
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}
                             onFocus={() => setHoveredIndex(index)}
                             onBlur={() => setHoveredIndex(null)}
+                            {...linkProps}
                         >
                             <motion.div
                                 className="relative flex items-center justify-center h-12 rounded-xl cursor-pointer"

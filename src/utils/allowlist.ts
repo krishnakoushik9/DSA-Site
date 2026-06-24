@@ -30,7 +30,7 @@ export const APPROVED_DEVICES: ApprovedDevice[] = [
         name: "Krishna",
         device: "iPad Safari Testing",
         browser: "Safari",
-        email: "krishnakoushik.pasupuleti@gmail.com",
+        email: "krishna@dsa-tracker.com",
         accessKey: "krishna-ipad-safari",
         match: (ua: string, maxTouchPoints: number) => {
             const isMacOrIPad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && maxTouchPoints > 0);
