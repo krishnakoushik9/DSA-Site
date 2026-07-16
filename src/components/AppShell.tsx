@@ -12,7 +12,7 @@ import PremiumPopup from '@/components/PremiumPopup';
 import LearnAIPopup from '@/components/LearnAIPopup';
 import MobileBlockedScreen from '@/components/MobileBlockedScreen';
 import { isMobile as checkIsMobile } from '@/utils/isMobile';
-import { checkDeviceBypass } from '@/utils/allowlist';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import RetroThemeOverride from '@/components/RetroThemeOverride';
 import { ShieldAlert, X } from 'lucide-react';
@@ -21,12 +21,17 @@ import { onboardingTour } from '@/components/tour/steps';
 import TourHelpButton from '@/components/tour/TourHelpButton';
 import TourAutoStarter from '@/components/tour/TourAutoStarter';
 
+// Dynamic import — only loads Three.js bundle when mobile + not logged in
+const MobileLandingExperience = dynamic(
+    () => import('@/components/mobile-landing/MobileLandingExperience'),
+    { ssr: false }
+);
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isLoggedIn } = useAppStore();
     const [mounted, setMounted] = useState(false);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
-    const [isBypassed, setIsBypassed] = useState(false);
     const [showBanner, setShowBanner] = useState(true);
 
     useEffect(() => {
@@ -36,7 +41,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         };
 
         handleResize(); // Initial check
-        setIsBypassed(checkDeviceBypass());
         window.addEventListener('resize', handleResize);
 
         return () => window.removeEventListener('resize', handleResize);
@@ -87,8 +91,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         };
     }, [isMobileDevice]);
 
-    // If we detected a mobile device, show the blocked screen
+    // Mobile: show glass orb landing if not logged in, or MobileBlockedScreen if logged in
     if (mounted && isMobileDevice) {
+        if (!isLoggedIn) {
+            return <MobileLandingExperience />;
+        }
         return <MobileBlockedScreen />;
     }
 
@@ -122,7 +129,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                             <SyncIndicator />
                         </div>
                         <div className="w-full max-w-[1400px] mx-auto p-6 lg:p-8 overflow-hidden">
-                            {isBypassed && showBanner && (
+                            {showBanner && isMobileDevice && (
                                 <div className="mb-6 p-4 rounded-xl bg-nord12/10 border border-nord12/30 flex items-center justify-between gap-3 text-nord12 text-sm font-medium animate-fade-in-up backdrop-blur-md">
                                     <div className="flex items-center gap-2">
                                         <ShieldAlert className="h-5 w-5 shrink-0 text-nord12" />

@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="bg-nord0 text-nord4 antialiased">
         <Toaster position="bottom-right" toastOptions={{
           style: {

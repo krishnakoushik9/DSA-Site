@@ -1,0 +1,474 @@
+/* ============================================================
+   MOBILE LANDING EXPERIENCE — Glass Orb Login
+   ============================================================ */
+
+/* Root container */
+.mobile-landing-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFF5EE 40%, #F5F0EA 100%);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 9999;
+}
+
+/* ── Headline Content ───────────────────────────────────── */
+
+.landing-content-headline {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88%;
+  max-width: 400px;
+  text-align: center;
+  z-index: 4;
+  will-change: opacity, transform;
+  transition: opacity 0.05s linear;
+}
+
+.landing-headline-text {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: 1.15;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
+}
+
+.landing-headline-accent {
+  font-weight: 400;
+  background: linear-gradient(135deg, #5e81f4, #bf67f5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-tagline-text {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.4);
+  margin: 0;
+  padding: 0 8px;
+}
+
+/* ── Swipe Hint ─────────────────────────────────────────── */
+
+.landing-swipe-hint {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 4;
+  will-change: opacity, transform;
+}
+
+.landing-swipe-hint span {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.02em;
+}
+
+.swipe-hint-chevrons {
+  color: rgba(0, 0, 0, 0.25);
+  animation: swipe-bounce 2s ease-in-out infinite;
+}
+
+@keyframes swipe-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── Login Prompt (fades in) ────────────────────────────── */
+
+.landing-login-prompt {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88%;
+  max-width: 400px;
+  text-align: center;
+  z-index: 4;
+  will-change: opacity, transform;
+}
+
+.login-prompt-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 300;
+  font-size: clamp(24px, 7vw, 36px);
+  line-height: 1.2;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px 0;
+}
+
+.login-prompt-brand {
+  font-weight: 500;
+  background: linear-gradient(135deg, #5e81f4, #6C5CE7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.login-prompt-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.4);
+  margin: 0;
+}
+
+/* ── Mobile Login Panel ─────────────────────────────────── */
+
+.mobile-login-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 28px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));
+  z-index: 10;
+  will-change: opacity, transform;
+}
+
+.login-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.mobile-login-btn {
+  width: 100% !important;
+  max-width: 360px;
+}
+
+.login-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ── Login Divider ──────────────────────────────────────── */
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  margin: 2px 0;
+}
+
+.login-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.login-divider-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(0, 0, 0, 0.2);
+}
+
+/* ── Username & Passcode Steps ──────────────────────────── */
+
+.login-username-container,
+.login-passcode-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.login-panel-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.login-panel-dismiss-btn:active {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.login-back-btn {
+  align-self: flex-start;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.5);
+  transition: background 0.15s;
+}
+
+.login-back-btn:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.login-step-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  font-size: 22px;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+}
+
+.login-step-subtitle {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.4);
+  margin: -8px 0 0 0;
+  text-align: center;
+}
+
+.login-username-badge {
+  font-weight: 600;
+  color: #5e81f4;
+}
+
+.login-text-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+
+.login-text-input::placeholder {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.login-text-input:focus {
+  border-color: rgba(94, 129, 244, 0.4);
+  box-shadow: 0 0 0 4px rgba(94, 129, 244, 0.08);
+}
+
+/* ── Pin Input Row ──────────────────────────────────────── */
+
+.login-pin-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.login-pin-input {
+  width: 56px;
+  height: 56px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Inter', monospace;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+  -webkit-appearance: none;
+}
+
+.login-pin-input:focus {
+  border-color: rgba(94, 129, 244, 0.5);
+  box-shadow: 0 0 0 4px rgba(94, 129, 244, 0.1);
+  transform: scale(1.05);
+}
+
+/* ── Continue Button ────────────────────────────────────── */
+
+.login-continue-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 16px;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.login-continue-btn:active {
+  transform: scale(0.97);
+}
+
+.login-continue-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.login-continue-btn:disabled:active {
+  transform: none;
+}
+
+/* ── Error Message ──────────────────────────────────────── */
+
+.login-error {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ec4c47;
+  background: rgba(236, 76, 71, 0.06);
+  padding: 8px 16px;
+  border-radius: 10px;
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+  margin: 0;
+}
+
+/* ── Spinner ────────────────────────────────────────────── */
+
+.login-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Sync Note ──────────────────────────────────────────── */
+
+.login-sync-note {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  margin: 16px 0 0 0;
+}
+
+/* ── Glass Orb Touch Area ───────────────────────────────── */
+
+/* ── Combined Glass Orb ── */
+.glass-orb-combined-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: left, top, transform;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.08));
+}
+
+.glass-orb-placeholder {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95), rgba(245, 240, 235, 0.7) 60%, rgba(200, 195, 190, 0.35));
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    inset 0 2px 6px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.glass-orb-magnifier {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  backdrop-filter: blur(14px) saturate(120%) contrast(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(120%) contrast(1.05);
+  filter: url(#glass-displacement);
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  will-change: opacity;
+}
+
+/* ── Reduced Motion ─────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint-chevrons {
+    animation: none;
+  }
+
+  .mobile-landing-root * {
+    transition-duration: 0.01s !important;
+    animation-duration: 0.01s !important;
+  }
+}
+
+/* ── SVG Filter (invisible, used for glass distortion) ── */
+
+.glass-svg-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ── Prism Background ── */
+.mobile-landing-prism-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+

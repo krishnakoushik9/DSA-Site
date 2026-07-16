@@ -1,5 +1,3 @@
-import { checkDeviceBypass } from './allowlist';
-
 /**
  * Details of the current device detection
  */
@@ -44,16 +42,11 @@ export const getDeviceDetails = () => {
 };
 
 /**
- * Returns true if the device is mobile/blocked, and false if allowed (either desktop, or authorized tablet).
+ * Returns true if the current device is mobile (phone, tablet, or small screen).
+ * All mobile devices now get the new mobile landing experience.
  */
 export const isMobile = (): boolean => {
     if (typeof window === 'undefined') return false;
-
-    // Check if the user has an active authorized device bypass
-    if (checkDeviceBypass()) {
-        return false;
-    }
-
     const details = getDeviceDetails();
     return details.isMobile;
 };
