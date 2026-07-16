@@ -91,12 +91,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         };
     }, [isMobileDevice]);
 
-    // Mobile: show glass orb landing if not logged in, or MobileBlockedScreen if logged in
-    if (mounted && isMobileDevice) {
-        if (!isLoggedIn) {
-            return <MobileLandingExperience />;
-        }
-        return <MobileBlockedScreen />;
+    // Mobile: show glass orb landing if not logged in
+    if (mounted && isMobileDevice && !isLoggedIn) {
+        return <MobileLandingExperience />;
     }
 
     // Login page and root redirect — no sidebar
