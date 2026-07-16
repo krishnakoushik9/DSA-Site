@@ -3,8 +3,8 @@
 // Bump APP_VERSION here + add a CHANGELOG entry on every release.
 // ============================================================
 
-export const APP_VERSION = '1.3.4';
-export const BUILD_DATE = '2026-05-26';
+export const APP_VERSION = '2.0.0';
+export const BUILD_DATE = '2026-07-16';
 
 export interface ChangelogEntry {
     version: string;
@@ -15,6 +15,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+    {
+        version: '2.0.0',
+        date: '2026-07-16',
+        label: 'major',
+        title: 'Tactile Glass Mobile Experience',
+        changes: [
+            { type: 'feat', text: 'Liquid Glass Orb: Wabi-inspired tactile 3D glass orb landing experience on mobile devices.' },
+            { type: 'feat', text: 'Dynamic SVG Refraction Filter: Real-time background distortion warping HTML layout beneath the moving glass.' },
+            { type: 'feat', text: 'Responsive Scaling Fix: Adaptive layout and horizontal centering corrections to prevent viewport text cutoff.' },
+            { type: 'feat', text: 'Full Mobile Access: Removed the mobile blocking screen to allow all logged-in users to access the dashboard on mobile and tablet browsers.' },
+        ],
+    },
     {
         version: '1.3.4',
         date: '2026-05-26',
